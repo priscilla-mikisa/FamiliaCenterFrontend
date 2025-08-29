@@ -1,44 +1,95 @@
+// src/composables/useValidation.ts
 import { ref } from 'vue';
 
 export const useValidation = () => {
   const errors = ref<Record<string, string>>({});
 
   const validateSignUpForm = (formData: {
-    name: string;
+    first_name?: string;
+    last_name?: string;
+    name?: string; // Keep for backward compatibility
     email: string;
     password: string;
     confirmPassword: string;
+    userRole: string;
+    specialization?: string;
     agreeToTerms: boolean;
+    phone_number?: string;
+    country_code?: string;
   }) => {
     errors.value = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.name.trim()) {
-      errors.value.name = 'Full name is required';
-    } else if (formData.name.trim().length < 2) {
-      errors.value.name = 'Name must be at least 2 characters';
+    // Validate user role
+    if (!formData.userRole) {
+      errors.value.userRole = 'Please select your role';
+      return false;
     }
 
+    // Validate names - check both patterns
+    if (formData.first_name !== undefined && formData.last_name !== undefined) {
+      // New form structure with separate first_name and last_name
+      if (!formData.first_name.trim()) {
+        errors.value.first_name = 'First name is required';
+      } else if (formData.first_name.trim().length < 2) {
+        errors.value.first_name = 'First name must be at least 2 characters';
+      }
+
+      if (!formData.last_name.trim()) {
+        errors.value.last_name = 'Last name is required';
+      } else if (formData.last_name.trim().length < 2) {
+        errors.value.last_name = 'Last name must be at least 2 characters';
+      }
+    } else if (formData.name) {
+      // Legacy form structure with single name field
+      if (!formData.name.trim()) {
+        errors.value.name = 'Full name is required';
+      } else if (formData.name.trim().length < 2) {
+        errors.value.name = 'Name must be at least 2 characters';
+      } else if (formData.name.trim().split(' ').length < 2) {
+        errors.value.name = 'Please enter both first and last name';
+      }
+    } else {
+      errors.value.name = 'Name is required';
+    }
+
+    // Validate email
     if (!formData.email.trim()) {
       errors.value.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
       errors.value.email = 'Please enter a valid email address';
     }
 
+    // Validate phone number if present
+    if (formData.phone_number !== undefined && !formData.phone_number.trim()) {
+      errors.value.phone_number = 'Phone number is required';
+    }
+
+    // Validate country code if present
+    if (formData.country_code !== undefined && !formData.country_code) {
+      errors.value.country_code = 'Country is required';
+    }
+
+    // Validate specialization for counselors
+    if (formData.userRole === 'counselor' && !formData.specialization) {
+      errors.value.specialization = 'Specialization is required for counselors';
+    }
+
+    // Validate password
     if (!formData.password) {
       errors.value.password = 'Password is required';
     } else if (formData.password.length < 8) {
       errors.value.password = 'Password must be at least 8 characters';
-    } else if (!/[A-Z]/.test(formData.password)) {
-      errors.value.password = 'Password must contain at least one uppercase letter';
-    } else if (!/[0-9]/.test(formData.password)) {
-      errors.value.password = 'Password must contain at least one number';
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    // Validate confirm password
+    if (!formData.confirmPassword) {
+      errors.value.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
       errors.value.confirmPassword = 'Passwords do not match';
     }
 
+    // Validate terms agreement
     if (!formData.agreeToTerms) {
       errors.value.agreeToTerms = 'You must agree to the terms and conditions';
     }
@@ -51,11 +102,16 @@ export const useValidation = () => {
     password: string;
   }) => {
     errors.value = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    // Validate email (username field)
     if (!formData.username.trim()) {
-      errors.value.username = 'Username is required';
+      errors.value.username = 'Email is required';
+    } else if (!emailRegex.test(formData.username)) {
+      errors.value.username = 'Please enter a valid email address';
     }
 
+    // Validate password
     if (!formData.password) {
       errors.value.password = 'Password is required';
     } else if (formData.password.length < 8) {
@@ -65,9 +121,117 @@ export const useValidation = () => {
     return Object.keys(errors.value).length === 0;
   };
 
+  const validateSessionBookingForm = (formData: {
+    counsellor_id: number | null;
+    session_date: string;
+    session_time: string;
+    notes?: string;
+  }) => {
+    errors.value = {};
+
+    // Validate counsellor selection
+    if (!formData.counsellor_id) {
+      errors.value.counsellor_id = 'Please select a counsellor';
+    }
+
+    // Validate session date
+    if (!formData.session_date) {
+      errors.value.session_date = 'Please select a session date';
+    } else {
+      const selectedDate = new Date(formData.session_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        errors.value.session_date = 'Session date cannot be in the past';
+      }
+    }
+
+    // Validate session time
+    if (!formData.session_time) {
+      errors.value.session_time = 'Please select a session time';
+    } else {
+      // Check if time is within business hours (9 AM - 6 PM)
+      const [hours] = formData.session_time.split(':').map(Number);
+      if (hours < 9 || hours >= 18) {
+        errors.value.session_time = 'Please select a time between 9:00 AM and 6:00 PM';
+      }
+    }
+
+    return Object.keys(errors.value).length === 0;
+  };
+
+  const validateContactForm = (formData: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) => {
+    errors.value = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.name.trim()) {
+      errors.value.name = 'Name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.value.name = 'Name must be at least 2 characters';
+    }
+
+    if (!formData.email.trim()) {
+      errors.value.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.value.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.subject.trim()) {
+      errors.value.subject = 'Subject is required';
+    } else if (formData.subject.trim().length < 3) {
+      errors.value.subject = 'Subject must be at least 3 characters';
+    }
+
+    if (!formData.message.trim()) {
+      errors.value.message = 'Message is required';
+    } else if (formData.message.trim().length < 10) {
+      errors.value.message = 'Message must be at least 10 characters';
+    }
+
+    return Object.keys(errors.value).length === 0;
+  };
+
+  const validateOTPCode = (otpCode: string) => {
+    errors.value = {};
+
+    if (!otpCode) {
+      errors.value.otpCode = 'OTP code is required';
+    } else if (!/^\d{6}$/.test(otpCode)) {
+      errors.value.otpCode = 'OTP code must be 6 digits';
+    }
+
+    return Object.keys(errors.value).length === 0;
+  };
+
+  const clearErrors = () => {
+    errors.value = {};
+  };
+
+  const clearError = (field: string) => {
+    if (errors.value[field]) {
+      delete errors.value[field];
+    }
+  };
+
+  const setError = (field: string, message: string) => {
+    errors.value[field] = message;
+  };
+
   return {
     errors,
     validateSignUpForm,
-    validateLoginForm
+    validateLoginForm,
+    validateSessionBookingForm,
+    validateContactForm,
+    validateOTPCode,
+    clearErrors,
+    clearError,
+    setError
   };
 };

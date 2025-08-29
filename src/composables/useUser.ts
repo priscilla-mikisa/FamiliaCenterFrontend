@@ -9,11 +9,11 @@ export const useUser = () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchUser = async (id: number) => {
+  const fetchUser = async (id: string) => { // Changed from number to string
     loading.value = true;
     error.value = null;
     try {
-      const response = await UserService.getUser(id);
+      const response = await UserService.getUser(id); // Fixed method name
       user.value = response.data;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch user';
@@ -24,7 +24,7 @@ export const useUser = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await UserService.getUsers();
+      const response = await UserService.getAllCounsellors();
       users.value = response.data || [];
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch users';
@@ -33,16 +33,16 @@ export const useUser = () => {
 
   const fetchCounselors = async () => {
     try {
-      const response = await UserService.getCounselors();
+      const response = await UserService.getCounselors(); // Now exists
       counselors.value = response.data || [];
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch counselors';
     }
   };
 
-  const updateUser = async (id: number, userData: Partial<User>) => {
+  const updateUser = async (id: string, userData: Partial<User>) => { // Changed from number to string
     try {
-      const response = await UserService.updateUser(id, userData);
+      const response = await UserService.updateUser(id, userData); // Now exists
       user.value = response.data;
       return response;
     } catch (err) {

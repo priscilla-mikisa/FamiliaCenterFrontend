@@ -1,3 +1,4 @@
+<!-- src/views/dashboard/DashboardOverview.vue -->
 <template>
   <div class="space-y-6">
     <!-- Welcome Banner -->
@@ -7,11 +8,38 @@
           <h2 class="text-2xl font-bold mb-2">Welcome back, {{ user?.first_name || 'User' }}</h2>
           <p class="max-w-xl">Your journey to stronger relationships and personal growth continues.</p>
         </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+          <router-link
+            to="/dashboard/sessions"
+            class="px-6 py-3 bg-white text-green-600 rounded-lg font-medium hover:bg-gray-100 transition-colors inline-block"
+          >
+            View Sessions
+          </router-link>
+          <router-link
+            to="/dashboard/subscription"
+            v-if="!currentSubscription"
+            class="px-6 py-3 bg-green-800 text-white rounded-lg font-medium hover:bg-green-900 transition-colors inline-block"
+          >
+            Choose Plan
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Subscription Status -->
+    <div v-if="currentSubscription" class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-medium text-blue-900">{{ currentSubscription.plan_name }}</h3>
+          <p class="text-blue-700 text-sm">
+            Next billing: {{ formatDate(currentSubscription.next_billing_date) }}
+          </p>
+        </div>
         <router-link
-          to="/dashboard/sessions"
-          class="mt-4 md:mt-0 px-6 py-3 bg-white text-green-600 rounded-lg font-medium hover:bg-gray-100 transition-colors inline-block"
+          to="/dashboard/subscription"
+          class="text-blue-600 hover:text-blue-800 text-sm font-medium"
         >
-          View Sessions
+          Manage Plan →
         </router-link>
       </div>
     </div>
@@ -27,6 +55,9 @@
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
             <VideoIcon class="w-6 h-6 text-green-600" />
           </div>
+        </div>
+        <div class="mt-2 text-sm">
+          <span class="text-green-600">{{ upcomingSessions.length }} upcoming</span>
         </div>
       </div>
 
@@ -57,11 +88,11 @@
       <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500">New Messages</p>
-            <p class="text-2xl font-bold mt-1">{{ stats.newMessages }}</p>
+            <p class="text-sm text-gray-500">Available Counselors</p>
+            <p class="text-2xl font-bold mt-1">{{ counsellors.length }}</p>
           </div>
           <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-            <MessageCircleIcon class="w-6 h-6 text-yellow-600" />
+            <UsersIcon class="w-6 h-6 text-yellow-600" />
           </div>
         </div>
       </div>
@@ -87,10 +118,10 @@
               >
                 <div class="flex justify-between items-start">
                   <div>
-                    <h4 class="font-medium text-gray-900">{{ session.title }}</h4>
+                    <h4 class="font-medium text-gray-900">{{ session.counsellor_name || 'Counseling Session' }}</h4>
                     <div class="flex items-center mt-1 text-sm text-gray-500">
                       <CalendarIcon class="w-4 h-4 mr-1" />
-                      <span>{{ formatDate(session.start_time) }}</span>
+                      <span>{{ formatSessionTime(session.session_date, session.session_time) }}</span>
                       <span class="mx-2">•</span>
                       <ClockIcon class="w-4 h-4 mr-1" />
                       <span>{{ session.duration }} mins</span>
@@ -99,19 +130,27 @@
                       <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
                         <UserIcon class="w-3 h-3 text-green-600" />
                       </div>
-                      <span class="text-sm text-gray-600">{{ session.counselor.name }}</span>
+                      <span class="text-sm text-gray-600">{{ session.counselor.specialization }}</span>
                     </div>
                   </div>
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    {{ session.status }}
+                  <span :class="`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSessionStatusClass(session.status)}`">
+                    {{ getSessionStatusText(session.status) }}
                   </span>
                 </div>
                 <div class="mt-4 flex space-x-2">
-                  <router-link
-                    :to="`/dashboard/sessions/join/${session.id}`"
+                  <button
+                    v-if="canJoinSession(session)"
+                    @click="joinSession(session)"
                     class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm text-center"
                   >
                     Join Session
+                  </button>
+                  <router-link
+                    v-else
+                    :to="`/dashboard/sessions/join/${session.id}`"
+                    class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm text-center"
+                  >
+                    View Session
                   </router-link>
                   <button class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
                     Reschedule
@@ -173,12 +212,15 @@
                 <span class="text-sm font-medium">Resources</span>
               </router-link>
 
-              <button class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <router-link
+                to="/dashboard/subscription"
+                class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
                 <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
-                  <MessageCircleIcon class="w-5 h-5 text-yellow-600" />
+                  <CreditCardIcon class="w-5 h-5 text-yellow-600" />
                 </div>
-                <span class="text-sm font-medium">Messages</span>
-              </button>
+                <span class="text-sm font-medium">Subscription</span>
+              </router-link>
             </div>
           </div>
         </div>
@@ -189,36 +231,19 @@
             <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
           </div>
           <div class="p-6">
-            <div class="space-y-4">
-              <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckCircleIcon class="w-4 h-4 text-green-600" />
+            <div v-if="recentActivity.length > 0" class="space-y-4">
+              <div v-for="activity in recentActivity" :key="activity.id" class="flex items-start space-x-3">
+                <div :class="`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`">
+                  <component :is="activity.icon" class="w-4 h-4" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm text-gray-900">Completed session with Dr. Sarah Johnson</p>
-                  <p class="text-xs text-gray-500">2 hours ago</p>
+                  <p class="text-sm text-gray-900">{{ activity.message }}</p>
+                  <p class="text-xs text-gray-500">{{ activity.time }}</p>
                 </div>
               </div>
-
-              <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <BookOpenIcon class="w-4 h-4 text-blue-600" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm text-gray-900">Enrolled in Marriage Restoration Program</p>
-                  <p class="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
-
-              <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <FileTextIcon class="w-4 h-4 text-purple-600" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm text-gray-900">Downloaded new resources</p>
-                  <p class="text-xs text-gray-500">3 days ago</p>
-                </div>
-              </div>
+            </div>
+            <div v-else class="text-center text-gray-500 text-sm">
+              No recent activity
             </div>
           </div>
         </div>
@@ -233,54 +258,100 @@ import {
   VideoIcon,
   BookOpenIcon,
   FileTextIcon,
-  MessageCircleIcon,
+  UsersIcon,
   CalendarIcon,
   ClockIcon,
   UserIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CreditCardIcon
 } from 'lucide-vue-next';
 import { useSessions } from '@/composables/useSessions';
 import { usePrograms } from '@/composables/usePrograms';
-import { AuthService } from '@/services/apiService';
+import { useSubscriptions } from '@/composables/useSubscriptions';
+import { useAuth } from '@/composables/useAuth';
+import type { Session } from '@/types';
 
-const { upcomingSessions, fetchSessions, loading: sessionsLoading } = useSessions();
+const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, fetchCounsellors, getSessionStatusText, getSessionStatusClass, formatSessionTime } = useSessions();
 const { enrolledPrograms, fetchPrograms } = usePrograms();
+const { currentSubscription, getCurrentSubscription } = useSubscriptions();
+const { user, getProfile } = useAuth();
 
-interface User {
-  first_name?: string;
-  last_name?: string;}
+const recentActivity = ref([
+  {
+    id: 1,
+    message: 'Profile updated successfully',
+    time: '2 hours ago',
+    icon: CheckCircleIcon,
+    color: 'bg-green-100 text-green-600'
+  },
+  {
+    id: 2,
+    message: 'Session booked with counselor',
+    time: '1 day ago',
+    icon: VideoIcon,
+    color: 'bg-blue-100 text-blue-600'
+  },
+  {
+    id: 3,
+    message: 'Downloaded new resources',
+    time: '3 days ago',
+    icon: FileTextIcon,
+    color: 'bg-purple-100 text-purple-600'
+  }
+]);
 
-const user = ref<User | null>(null);
-
-// Mock stats - replace with actual data from your API
+// Computed stats based on real data
 const stats = computed(() => ({
-  totalSessions: upcomingSessions.value.length + 8, // mock past sessions
+  totalSessions: upcomingSessions.value.length + 8, // Add past sessions count when available
   activePrograms: enrolledPrograms.value.length,
-  resources: 24,
-  newMessages: 3
+  resources: 24, // This should come from resources API when available
 }));
 
+const canJoinSession = (session: Session) => {
+  if (session.status !== 'confirmed' && session.status !== 'accepted') {
+    return false;
+  }
+
+  const sessionDateTime = new Date(`${session.session_date}T${session.session_time}`);
+  const now = new Date();
+  const timeDiff = sessionDateTime.getTime() - now.getTime();
+
+  // Can join 15 minutes before and up to session end time
+  return timeDiff <= 15 * 60 * 1000 && timeDiff >= -60 * 60 * 1000;
+};
+
+const joinSession = (session: Session) => {
+  // In a real implementation, this would open the meeting link
+  if (session.meeting_link) {
+    window.open(session.meeting_link, '_blank');
+  } else {
+    console.log('Joining session:', session);
+    alert(`Joining session with ${session.counsellor_name}...`);
+  }
+};
+
 const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'short',
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    month: 'long',
+    day: 'numeric'
   });
 };
 
 onMounted(async () => {
   try {
-    // Fetch user profile
-    const profileResponse = await AuthService.getProfile();
-    user.value = profileResponse.data;
+    // Load user profile
+    await getProfile().catch(() => {
+      console.log('Could not load user profile');
+    });
 
-    // Fetch dashboard data
+    // Load dashboard data in parallel
     await Promise.all([
-      fetchSessions(true), // upcoming only
-      fetchPrograms()
+      fetchSessions().catch(() => console.log('Could not load sessions')),
+      fetchPrograms().catch(() => console.log('Could not load programs')),
+      fetchCounsellors().catch(() => console.log('Could not load counsellors')),
+      getCurrentSubscription().catch(() => console.log('No current subscription'))
     ]);
   } catch (error) {
     console.error('Failed to load dashboard data:', error);

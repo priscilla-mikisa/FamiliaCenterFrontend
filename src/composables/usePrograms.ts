@@ -1,4 +1,3 @@
-// src/composables/usePrograms.ts
 import { ref, computed } from 'vue';
 import { ProgramService, type Program } from '@/services/apiService';
 

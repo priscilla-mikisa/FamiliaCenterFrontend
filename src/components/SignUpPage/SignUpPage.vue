@@ -14,7 +14,7 @@
         <p class="text-green-100 mt-2">Create your account to access family support resources</p>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-6 sm:p-8">
+      <form @submit.prevent="handleSubmit" class="p-6 sm:p-8 max-h-[70vh] overflow-y-auto">
         <div v-if="errors.submit" class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
           {{ errors.submit }}
         </div>
@@ -24,26 +24,60 @@
         </div>
 
         <div class="space-y-4">
+          <!-- Role Selection - First Field -->
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+            <label for="userRole" class="block text-sm font-medium text-gray-700 mb-1">
+              I am signing up as a:
             </label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <UserIcon class="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                v-model="formData.name"
-                class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="John Doe"
-              />
-            </div>
-            <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</p>
+            <select
+              id="userRole"
+              name="userRole"
+              v-model="formData.userRole"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Select your role</option>
+              <option value="patient">Patient/Client - Seeking counseling services</option>
+              <option value="counselor">Counselor/Therapist - Providing services</option>
+            </select>
+            <p v-if="errors.userRole" class="mt-1 text-sm text-red-600">{{ errors.userRole }}</p>
           </div>
 
+          <!-- First Name and Last Name - Side by Side -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                v-model="formData.first_name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="John"
+              />
+              <p v-if="errors.first_name" class="mt-1 text-sm text-red-600">{{ errors.first_name }}</p>
+            </div>
+            <div>
+              <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                v-model="formData.last_name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Doe"
+              />
+              <p v-if="errors.last_name" class="mt-1 text-sm text-red-600">{{ errors.last_name }}</p>
+            </div>
+          </div>
+
+          <!-- Email -->
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
               Email Address
@@ -57,6 +91,7 @@
                 name="email"
                 type="email"
                 v-model="formData.email"
+                required
                 class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="john@example.com"
               />
@@ -64,6 +99,93 @@
             <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
           </div>
 
+          <!-- Phone Number and Country Code -->
+          <div class="grid grid-cols-5 gap-3">
+            <div class="col-span-2">
+              <label for="countryCode" class="block text-sm font-medium text-gray-700 mb-1">
+                Country
+              </label>
+              <select
+                id="countryCode"
+                v-model="formData.country_code"
+                required
+                class="w-full px-2 py-3 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Select</option>
+                <option value="US">🇺🇸 US +1</option>
+                <option value="KE">🇰🇪 KE +254</option>
+                <option value="UG">🇺🇬 UG +256</option>
+                <option value="GB">🇬🇧 GB +44</option>
+                <option value="NG">🇳🇬 NG +234</option>
+                <option value="ZA">🇿🇦 ZA +27</option>
+                <option value="CA">🇨🇦 CA +1</option>
+                <option value="AU">🇦🇺 AU +61</option>
+                <option value="IN">🇮🇳 IN +91</option>
+                <option value="DE">🇩🇪 DE +49</option>
+                <option value="FR">🇫🇷 FR +33</option>
+              </select>
+              <p v-if="errors.country_code" class="mt-1 text-sm text-red-600">{{ errors.country_code }}</p>
+            </div>
+            <div class="col-span-3">
+              <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number
+              </label>
+              <input
+                id="phoneNumber"
+                v-model="formData.phone_number"
+                type="tel"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500"
+                placeholder="123456789"
+              />
+              <p v-if="errors.phone_number" class="mt-1 text-sm text-red-600">{{ errors.phone_number }}</p>
+            </div>
+          </div>
+
+          <!-- Specialization field - only for counselors -->
+          <div v-if="formData.userRole === 'counselor'">
+            <label for="specialization" class="block text-sm font-medium text-gray-700 mb-1">
+              Specialization
+            </label>
+            <select
+              id="specialization"
+              name="specialization"
+              v-model="formData.specialization"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Select your specialization</option>
+              <option value="Marriage Counseling">Marriage Counseling</option>
+              <option value="Family Therapy">Family Therapy</option>
+              <option value="Individual Therapy">Individual Therapy</option>
+              <option value="Child Psychology">Child Psychology</option>
+              <option value="Addiction Recovery">Addiction Recovery</option>
+              <option value="Stress Management">Stress Management</option>
+              <option value="Relationship Counseling">Relationship Counseling</option>
+              <option value="General Counseling">General Counseling</option>
+            </select>
+            <p v-if="errors.specialization" class="mt-1 text-sm text-red-600">{{ errors.specialization }}</p>
+          </div>
+
+          <!-- Account Type - only for patients -->
+          <div v-if="formData.userRole === 'patient'">
+            <label for="account_type" class="block text-sm font-medium text-gray-700 mb-1">
+              Account Type
+            </label>
+            <select
+              id="account_type"
+              name="account_type"
+              v-model="formData.account_type"
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="individual">Individual</option>
+              <option value="couple">Couple</option>
+              <option value="family">Family</option>
+              <option value="anonymous">Anonymous</option>
+            </select>
+          </div>
+
+          <!-- Password -->
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -77,6 +199,7 @@
                 name="password"
                 type="password"
                 v-model="formData.password"
+                required
                 class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="At least 8 characters"
               />
@@ -84,6 +207,7 @@
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
           </div>
 
+          <!-- Confirm Password -->
           <div>
             <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
@@ -97,6 +221,7 @@
                 name="confirmPassword"
                 type="password"
                 v-model="formData.confirmPassword"
+                required
                 class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Confirm your password"
               />
@@ -104,23 +229,7 @@
             <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
           </div>
 
-          <div>
-            <label for="userType" class="block text-sm font-medium text-gray-700 mb-1">
-              Account Type
-            </label>
-            <select
-              id="userType"
-              name="userType"
-              v-model="formData.userType"
-              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="individual">Individual</option>
-              <option value="couple">Couple</option>
-              <option value="family">Family</option>
-              <option value="anonymous">Anonymous</option>
-            </select>
-          </div>
-
+          <!-- Terms Agreement -->
           <div class="flex items-start">
             <div class="flex items-center h-5">
               <input
@@ -148,7 +257,7 @@
           :disabled="isLoading"
           :class="`w-full mt-6 px-6 py-3 ${
             isLoading ? 'bg-green-500' : 'bg-green-600'
-          } text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center`"
+          } text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center disabled:opacity-50`"
         >
           <span v-if="isLoading" class="flex items-center">
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -189,46 +298,87 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
 import { useValidation } from '@/composables/useValidation';
+import {
+  XIcon,
+  UserIcon,
+  MailIcon,
+  LockIcon,
+  ArrowRightIcon,
+  ShieldCheckIcon
+} from 'lucide-vue-next';
 
 const router = useRouter();
 const { signUp, isLoading } = useAuth();
 const { errors, validateSignUpForm } = useValidation();
 
 const formData = reactive({
-  name: '',
+  first_name: '',
+  last_name: '',
   email: '',
   password: '',
   confirmPassword: '',
-  userType: 'individual',
+  phone_number: '',
+  country_code: '',
+  userRole: '', // 'patient' or 'counselor'
+  account_type: 'individual', // for patients
+  specialization: '', // for counselors
   agreeToTerms: false
 });
 
 const successMessage = ref('');
 
 const handleSubmit = async () => {
-  if (validateSignUpForm(formData)) {
-    try {
-      const response = await signUp({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        userType: formData.userType,
-        first_name: '',
-        last_name: ''
-      });
-      console.log(response);
+  console.log('Form submission started');
 
-      successMessage.value = 'Account created successfully! Redirecting...';
-      // Redirect to dashboard or verification page
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        errors.value.submit = error.message || 'Failed to create account. Please try again.';
+  // Clear previous errors
+  Object.keys(errors.value).forEach(key => {
+    delete errors.value[key];
+  });
+
+  // Validate form using the fixed validation function
+  if (!validateSignUpForm(formData)) {
+    console.log('Validation failed:', errors.value);
+    return;
+  }
+
+  console.log('Validation passed, calling API...');
+
+  try {
+    const userData = {
+      name: `${formData.first_name} ${formData.last_name}`,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      phone_number: formData.phone_number,
+      country_code: formData.country_code,
+      userRole: formData.userRole as 'patient' | 'counselor',
+      account_type: formData.account_type,
+      specialization: formData.specialization,
+    };
+
+    console.log('Calling signUp with userData:', userData);
+    const response = await signUp(userData);
+    console.log('Registration successful:', response);
+
+    successMessage.value = 'Account created successfully! Redirecting...';
+
+    // Redirect based on role
+    setTimeout(() => {
+      if (formData.userRole === 'counselor') {
+        router.push('/counselor-dashboard');
       } else {
-        errors.value.submit = 'Failed to create account. Please try again.';
+        router.push('/dashboard');
       }
+    }, 2000);
+
+  } catch (error: unknown) {
+    console.error('Registration error:', error);
+    if (error instanceof Error) {
+      errors.value.submit = error.message || 'Failed to create account. Please try again.';
+    } else {
+      errors.value.submit = 'Failed to create account. Please try again.';
     }
   }
 };

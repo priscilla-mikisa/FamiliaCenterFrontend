@@ -1,10 +1,14 @@
 export interface User {
+  id: string;
   name: string;
   email: string;
   first_name: string;
   last_name: string;
   password: string;
+  speciality?: string;
+  bio?: string;
   userType: string;
+  phone?: string;
 }
 
 export interface LoginData {
@@ -19,19 +23,25 @@ export interface ApiResponse {
   token?: string;
 }
 
-// Add to src/types/index.ts
 export interface Session {
-  id: number;
+  id: string;
   title: string;
   description?: string;
+  notes?: string;
+  feedback?: string;
   start_time: string;
+  meeting_link?: string;
   end_time?: string;
+  session_date: string;
+  session_time: string;
   duration: number;
   counselor: {
-    id: number;
+    id: string;
     name: string;
     specialization: string;
   };
+  counsellor_name?: string;
+  type?: string;
   status: string;
 }
 
@@ -44,7 +54,7 @@ export interface Program {
   total_weeks: number;
   session_count: number;
   resources_count: number;
-  next_session?: string;
+  next_session?: string | null;
 }
 
 export interface Resource {
@@ -56,4 +66,14 @@ export interface Resource {
   size: string;
   url: string;
   created_at: string;
+}
+
+// Add these missing interfaces that your components need
+export interface RecordedSession {
+  id: number;
+  client_name: string;
+  date: string;
+  type: string;
+  duration: string;
+  size: string;
 }

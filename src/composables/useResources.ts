@@ -1,4 +1,3 @@
-// src/composables/useResources.ts
 import { ref } from 'vue';
 import { ResourceService, type Resource } from '@/services/apiService';
 
