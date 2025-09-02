@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Welcome Banner -->
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
       <div class="flex flex-col md:flex-row md:items-center justify-between">
         <div>
@@ -16,7 +15,6 @@
       </div>
     </div>
 
-    <!-- Stats Overview -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between">
@@ -79,9 +77,7 @@
       </div>
     </div>
 
-    <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Today's Schedule -->
       <div class="lg:col-span-2">
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
@@ -136,9 +132,7 @@
         </div>
       </div>
 
-      <!-- Right Column -->
       <div class="space-y-6">
-        <!-- Quick Actions -->
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
@@ -168,7 +162,6 @@
           </div>
         </div>
 
-        <!-- Recent Client Activity -->
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
@@ -188,7 +181,6 @@
           </div>
         </div>
 
-        <!-- Pending Tasks -->
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold text-gray-900">Pending Tasks</h3>
@@ -233,7 +225,6 @@ const user = ref({
   specialization: 'Marriage Counseling'
 });
 
-// Mock data - replace with actual API calls
 const todaysSessions = ref(5);
 const activeClients = ref(23);
 const newClientsThisWeek = ref(3);
@@ -338,12 +329,10 @@ const getSessionStatusClass = (status: string) => {
 };
 
 const startSession = (sessionId: number) => {
-  // Implementation for starting a session
   alert(`Starting session ${sessionId}`);
 };
 
 onMounted(() => {
-  // Load counselor dashboard data
   console.log('Loading counselor dashboard data...');
 });
 </script>

@@ -1,9 +1,34 @@
-// src/services/tokenManager.ts - New file to handle token lifecycle
 export interface TokenInfo {
   token: string;
   expiresAt: number;
   isExpired: boolean;
   timeUntilExpiry: number;
+}
+
+export interface UserData {
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  country_code?: string;
+  speciality?: string;
+  bio?: string;
+  profile_picture?: string;
+  salutation?: string;
+}
+
+export interface AuthStatus {
+  isAuthenticated: boolean;
+  userType: string | null;
+  userId: string | null;
+  wasRemembered: boolean;
+  tokenInfo: TokenInfo | null;
+}
+
+export interface SessionExpiredInfo {
+  show: boolean;
+  userType: string;
 }
 
 export class TokenManager {
@@ -16,7 +41,6 @@ export class TokenManager {
     USER: 'user'
   };
 
-  // Check if a JWT token is expired (with buffer)
   static isTokenExpired(token: string, bufferMinutes: number = 2): boolean {
     try {
       const payload = token.split('.')[1];
@@ -28,11 +52,10 @@ export class TokenManager {
       return tokenData.exp <= (currentTime + bufferSeconds);
     } catch (error) {
       console.error('Error parsing token:', error);
-      return true; // Assume expired if we can't parse it
+      return true;
     }
   }
 
-  // Get token info including expiry status
   static getTokenInfo(token: string): TokenInfo | null {
     if (!token) return null;
 
@@ -54,7 +77,6 @@ export class TokenManager {
     }
   }
 
-  // Get valid token from storage
   static getValidToken(): string | null {
     const tokenSources = [
       () => localStorage.getItem(this.TOKEN_KEYS.AUTH_TOKEN),
@@ -73,14 +95,11 @@ export class TokenManager {
     return null;
   }
 
-  // Store token properly based on remember me preference
-  static storeToken(token: string, userData: any, userType: string, rememberMe: boolean = false) {
+  static storeToken(token: string, userData: UserData, userType: string, rememberMe: boolean = false) {
     console.log('Storing token with rememberMe:', rememberMe);
 
-    // Clear any existing tokens first
     this.clearTokens();
 
-    // Store based on remember me preference
     if (rememberMe) {
       localStorage.setItem(this.TOKEN_KEYS.AUTH_TOKEN, token);
       localStorage.setItem(this.TOKEN_KEYS.REMEMBER_ME, 'true');
@@ -89,12 +108,10 @@ export class TokenManager {
       localStorage.setItem(this.TOKEN_KEYS.REMEMBER_ME, 'false');
     }
 
-    // Always store user data in localStorage for persistence
     localStorage.setItem(this.TOKEN_KEYS.USER_TYPE, userType);
     localStorage.setItem(this.TOKEN_KEYS.USER_ID, userData?.id || '');
     localStorage.setItem(this.TOKEN_KEYS.USER, JSON.stringify(userData));
 
-    // Log token expiry time for debugging
     const tokenInfo = this.getTokenInfo(token);
     if (tokenInfo) {
       const expiryDate = new Date(tokenInfo.expiresAt * 1000);
@@ -103,7 +120,6 @@ export class TokenManager {
     }
   }
 
-  // Clear all authentication tokens and data
   static clearTokens() {
     Object.values(this.TOKEN_KEYS).forEach(key => {
       localStorage.removeItem(key);
@@ -111,13 +127,11 @@ export class TokenManager {
     });
   }
 
-  // Check if user previously chose "remember me"
   static wasRememberMeSelected(): boolean {
     return localStorage.getItem(this.TOKEN_KEYS.REMEMBER_ME) === 'true';
   }
 
-  // Get user authentication status
-  static getAuthStatus() {
+  static getAuthStatus(): AuthStatus {
     const token = this.getValidToken();
     const userType = localStorage.getItem(this.TOKEN_KEYS.USER_TYPE);
     const userId = localStorage.getItem(this.TOKEN_KEYS.USER_ID);
@@ -132,38 +146,31 @@ export class TokenManager {
     };
   }
 
-  // Handle expired tokens gracefully
   static handleExpiredToken() {
     console.warn('Token expired, clearing auth data');
 
     const wasRemembered = this.wasRememberMeSelected();
     const userType = localStorage.getItem(this.TOKEN_KEYS.USER_TYPE);
 
-    // Clear expired tokens
     this.clearTokens();
 
-    // If user had "remember me" selected, redirect to login with a message
     if (wasRemembered) {
       console.log('User had remember me selected, will show session expired message');
 
-      // Store a flag to show "session expired" message
       sessionStorage.setItem('sessionExpired', 'true');
       sessionStorage.setItem('previousUserType', userType || '');
     }
 
-    // Redirect to login
     if (!window.location.pathname.includes('/login')) {
       window.location.href = '/login';
     }
   }
 
-  // Check if we should show session expired message
-  static shouldShowSessionExpiredMessage(): { show: boolean; userType: string } {
+  static shouldShowSessionExpiredMessage(): SessionExpiredInfo {
     const sessionExpired = sessionStorage.getItem('sessionExpired') === 'true';
     const previousUserType = sessionStorage.getItem('previousUserType') || '';
 
     if (sessionExpired) {
-      // Clear the flags
       sessionStorage.removeItem('sessionExpired');
       sessionStorage.removeItem('previousUserType');
     }
@@ -171,6 +178,32 @@ export class TokenManager {
     return {
       show: sessionExpired,
       userType: previousUserType
+    };
+  }
+
+  static getTokenExpiryInfo(): {
+    expiresAt: Date;
+    hoursUntilExpiry: number;
+    minutesUntilExpiry: number;
+    isExpiringSoon: boolean;
+    timeUntilExpiry: number;
+  } | null {
+    const token = this.getValidToken();
+    if (!token) return null;
+
+    const tokenInfo = this.getTokenInfo(token);
+    if (!tokenInfo) return null;
+
+    const hoursUntilExpiry = tokenInfo.timeUntilExpiry / 3600;
+    const minutesUntilExpiry = tokenInfo.timeUntilExpiry / 60;
+    const isExpiringSoon = hoursUntilExpiry < 1; 
+
+    return {
+      expiresAt: new Date(tokenInfo.expiresAt * 1000),
+      hoursUntilExpiry,
+      minutesUntilExpiry,
+      isExpiringSoon,
+      timeUntilExpiry: tokenInfo.timeUntilExpiry
     };
   }
 }

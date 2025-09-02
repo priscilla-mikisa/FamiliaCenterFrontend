@@ -30,7 +30,6 @@ export const usePrograms = () => {
   const enrollInProgram = async (programId: number) => {
     try {
       await ProgramService.enrollInProgram(programId);
-      // Update the local state
       const programIndex = programs.value.findIndex(p => p.id === programId);
       if (programIndex !== -1) {
         programs.value[programIndex].is_enrolled = true;

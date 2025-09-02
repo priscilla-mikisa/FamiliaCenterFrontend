@@ -1,7 +1,5 @@
-<!-- src/views/dashboard/SubscriptionPlans.vue -->
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <div>
@@ -15,13 +13,11 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading && plans.length === 0" class="text-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
       <p class="mt-4 text-gray-600">Loading subscription plans...</p>
     </div>
 
-    <!-- Error State -->
     <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
       <p class="text-red-600">{{ error }}</p>
       <button
@@ -32,9 +28,7 @@
       </button>
     </div>
 
-    <!-- Plans Grid -->
     <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Free Trial Plan -->
       <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
         <div class="text-center">
           <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-600 text-white mb-4">
@@ -72,7 +66,6 @@
         </button>
       </div>
 
-      <!-- Subscription Plans -->
       <div
         v-for="plan in paidPlans"
         :key="plan.id"
@@ -82,7 +75,6 @@
             : 'border-gray-200 bg-white'
         }`"
       >
-        <!-- Popular Badge -->
         <div v-if="plan.is_popular" class="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium">
             Most Popular
@@ -118,7 +110,6 @@
       </div>
     </div>
 
-    <!-- Current Subscription Management -->
     <div v-if="currentSubscription" class="bg-white rounded-xl shadow p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">Manage Your Subscription</h3>
 
@@ -163,7 +154,6 @@
       </div>
     </div>
 
-    <!-- Cancel Subscription Modal -->
     <div v-if="showCancelModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-md w-full p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Cancel Subscription</h3>
@@ -189,7 +179,6 @@
       </div>
     </div>
 
-    <!-- Success Message -->
     <div v-if="successMessage" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
       {{ successMessage }}
     </div>
@@ -229,12 +218,10 @@ const selectPlan = async (plan: SubscriptionPlan) => {
     await subscribeToPlan(plan.id);
     successMessage.value = `Successfully subscribed to ${plan.name}!`;
 
-    // Clear success message after 3 seconds
     setTimeout(() => {
       successMessage.value = '';
     }, 3000);
 
-    // Refresh current subscription
     await getCurrentSubscription();
   } catch (err) {
     console.error('Subscription failed:', err);
@@ -244,7 +231,6 @@ const selectPlan = async (plan: SubscriptionPlan) => {
 
 const startFreeTrial = async () => {
   try {
-    // Create a mock free trial plan
     const freeTrialPlan = {
       id: 'free_trial',
       name: 'Free Trial',
@@ -298,7 +284,6 @@ onMounted(async () => {
   await Promise.all([
     fetchPlans(),
     getCurrentSubscription().catch(() => {
-      // User might not have a subscription yet, which is fine
       console.log('No current subscription found');
     })
   ]);

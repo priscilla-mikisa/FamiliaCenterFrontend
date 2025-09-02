@@ -1,9 +1,7 @@
-<!-- src/views/dashboard/SettingsView.vue -->
 <template>
   <div class="max-w-4xl mx-auto space-y-6">
     <h1 class="text-2xl font-bold">Account Settings</h1>
 
-    <!-- Profile Information -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
       <div class="p-6 border-b">
         <h2 class="text-lg font-semibold">Profile Information</h2>
@@ -98,7 +96,6 @@
       </form>
     </div>
 
-    <!-- Current Subscription -->
     <div v-if="currentSubscription" class="bg-white rounded-xl shadow-md overflow-hidden">
       <div class="p-6 border-b">
         <h2 class="text-lg font-semibold">Current Subscription</h2>
@@ -132,7 +129,6 @@
       </div>
     </div>
 
-    <!-- No Subscription -->
     <div v-else class="bg-white rounded-xl shadow-md overflow-hidden">
       <div class="p-6">
         <div class="text-center">
@@ -149,7 +145,6 @@
       </div>
     </div>
 
-    <!-- Account Actions -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
       <div class="p-6 border-b">
         <h2 class="text-lg font-semibold">Account Actions</h2>
@@ -187,7 +182,6 @@
       </div>
     </div>
 
-    <!-- Password Change Modal -->
     <div v-if="showPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-md w-full p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
@@ -243,7 +237,6 @@
       </div>
     </div>
 
-    <!-- Cancel Subscription Modal -->
     <div v-if="showCancelModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-md w-full p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Cancel Subscription</h3>
@@ -277,36 +270,74 @@ import { CreditCardIcon } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useSubscriptions } from '@/composables/useSubscriptions';
 
-const { user, getProfile, updateProfile } = useAuth();
+interface UserProfile {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  country_code?: string;
+  speciality?: string;
+  bio?: string;
+}
+
+interface ProfileForm {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  country_code: string;
+  speciality: string;
+  bio: string;
+}
+
+interface PasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface ProfileMessage {
+  type: 'success' | 'error';
+  text: string;
+}
+
+const authComposable = useAuth();
+const { getProfile, updateProfile } = authComposable;
 const { currentSubscription, getCurrentSubscription, cancelSubscription, formatPrice } = useSubscriptions();
 
-const profileLoading = ref(false);
-const passwordLoading = ref(false);
-const cancelLoading = ref(false);
-const showPasswordModal = ref(false);
-const showCancelModal = ref(false);
-const showDeleteModal = ref(false);
+const user = ref<UserProfile | null>(null);
+
+if ('user' in authComposable && authComposable.user && authComposable.user.value) {
+  user.value = authComposable.user.value as unknown as UserProfile;
+}
+
+const profileLoading = ref<boolean>(false);
+const passwordLoading = ref<boolean>(false);
+const cancelLoading = ref<boolean>(false);
+const showPasswordModal = ref<boolean>(false);
+const showCancelModal = ref<boolean>(false);
+const showDeleteModal = ref<boolean>(false);
 const userType = localStorage.getItem('userType');
 
-const profileMessage = ref<{type: 'success' | 'error', text: string} | null>(null);
+const profileMessage = ref<ProfileMessage | null>(null);
 
-const profileForm = ref({
+const profileForm = ref<ProfileForm>({
   first_name: '',
   last_name: '',
   email: '',
   phone_number: '',
   country_code: '',
-  speciality: '', // for counsellors
-  bio: '' // for counsellors
+  speciality: '',
+  bio: ''
 });
 
-const passwordForm = ref({
+const passwordForm = ref<PasswordForm>({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 });
 
-const handleProfileUpdate = async () => {
+const handleProfileUpdate = async (): Promise<void> => {
   profileLoading.value = true;
   profileMessage.value = null;
 
@@ -314,7 +345,6 @@ const handleProfileUpdate = async () => {
     await updateProfile(profileForm.value);
     profileMessage.value = { type: 'success', text: 'Profile updated successfully!' };
 
-    // Clear success message after 5 seconds
     setTimeout(() => {
       profileMessage.value = null;
     }, 5000);
@@ -326,7 +356,7 @@ const handleProfileUpdate = async () => {
   }
 };
 
-const handlePasswordChange = async () => {
+const handlePasswordChange = async (): Promise<void> => {
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
     alert('New passwords do not match');
     return;
@@ -334,8 +364,7 @@ const handlePasswordChange = async () => {
 
   passwordLoading.value = true;
   try {
-    // This would need a separate API endpoint for password change
-    // For now, show success message
+
     alert('Password changed successfully');
     showPasswordModal.value = false;
     passwordForm.value = {
@@ -351,7 +380,7 @@ const handlePasswordChange = async () => {
   }
 };
 
-const handleCancelSubscription = async () => {
+const handleCancelSubscription = async (): Promise<void> => {
   cancelLoading.value = true;
   try {
     await cancelSubscription();
@@ -368,8 +397,15 @@ const handleCancelSubscription = async () => {
 
 onMounted(async () => {
   try {
-    // Load user profile
-    await getProfile();
+    try {
+      const profileData = await getProfile();
+      if (profileData && 'data' in profileData) {
+        user.value = profileData.data as UserProfile;
+      }
+    } catch {
+      console.log('Could not load user profile from API');
+    }
+
     if (user.value) {
       profileForm.value = {
         first_name: user.value.first_name || '',
@@ -382,9 +418,8 @@ onMounted(async () => {
       };
     }
 
-    // Load subscription info
     await getCurrentSubscription().catch(() => {
-      // No subscription is fine
+      console.log('No current subscription');
     });
   } catch (error) {
     console.error('Failed to load settings data:', error);

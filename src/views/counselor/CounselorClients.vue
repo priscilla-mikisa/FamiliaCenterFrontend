@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header with Search and Filters -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <h2 class="text-xl font-semibold text-gray-900">My Clients</h2>
@@ -31,7 +30,6 @@
       </div>
     </div>
 
-    <!-- Clients Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="client in filteredClients"
@@ -73,7 +71,6 @@
             </div>
           </div>
 
-          <!-- Progress Bar -->
           <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div
               class="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -81,7 +78,6 @@
             ></div>
           </div>
 
-          <!-- Actions -->
           <div class="flex space-x-2">
             <button class="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
               View Details
@@ -97,7 +93,6 @@
       </div>
     </div>
 
-    <!-- Client Details Modal -->
     <div v-if="selectedClient" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b">
@@ -110,7 +105,6 @@
         </div>
 
         <div class="p-6 space-y-6">
-          <!-- Client Info -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-500">Email</label>
@@ -130,7 +124,6 @@
             </div>
           </div>
 
-          <!-- Session History -->
           <div>
             <h4 class="font-medium text-gray-900 mb-3">Session History</h4>
             <div class="space-y-2">
@@ -146,7 +139,6 @@
             </div>
           </div>
 
-          <!-- Notes -->
           <div>
             <h4 class="font-medium text-gray-900 mb-3">Notes</h4>
             <textarea
@@ -185,7 +177,6 @@ import {
 
 const searchQuery = ref('');
 const filterStatus = ref('');
-// Define the Client type
 type Client = {
   id: number;
   name: string;
@@ -211,7 +202,6 @@ type Client = {
 
 const selectedClient = ref<Client | null>(null);
 
-// Mock client data
 const clients = ref([
   {
     id: 1,

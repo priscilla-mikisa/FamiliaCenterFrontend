@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <h2 class="text-xl font-semibold text-gray-900">Resource Management</h2>
@@ -86,7 +85,6 @@
       </div>
     </div>
 
-    <!-- Resources Grid -->
     <div class="bg-white rounded-xl shadow">
       <div class="p-6 border-b">
         <h3 class="text-lg font-semibold text-gray-900">My Resources</h3>
@@ -303,7 +301,6 @@ const uploadForm = ref({
 
 const fileInput = ref<HTMLInputElement | null>(null);
 
-// Mock resources data
 const resources = ref<CounselorResource[]>([
   {
     id: '1',

@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Sessions Overview -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between">
@@ -51,7 +50,6 @@
       </div>
     </div>
 
-    <!-- Active Sessions -->
     <div class="bg-white rounded-xl shadow">
       <div class="px-6 py-4 border-b">
         <h3 class="text-lg font-semibold text-gray-900">Active & Upcoming Sessions</h3>
@@ -140,7 +138,6 @@
               </div>
             </div>
 
-            <!-- Session Notes Preview -->
             <div v-if="session.notes" class="mt-3 p-3 bg-gray-50 rounded-lg">
               <p class="text-sm text-gray-700">
                 <span class="font-medium">Notes:</span> {{ session.notes }}
@@ -151,7 +148,6 @@
       </div>
     </div>
 
-    <!-- Recorded Sessions -->
     <div class="bg-white rounded-xl shadow">
       <div class="px-6 py-4 border-b">
         <div class="flex items-center justify-between">
@@ -210,7 +206,6 @@
       </div>
     </div>
 
-    <!-- Session Notes Modal -->
     <div v-if="showNotesModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <div class="p-6 border-b">
@@ -294,7 +289,6 @@ import {
   XIcon
 } from 'lucide-vue-next';
 
-// Define proper interfaces
 interface Session {
   id: number;
   client_name: string;
@@ -324,7 +318,6 @@ const selectedSession = ref<Session | null>(null);
 const sessionNotes = ref('');
 const actionItems = ref('');
 
-// Mock session data - updated to include actionItems
 const allSessions = ref<Session[]>([
   {
     id: 1,
@@ -473,7 +466,6 @@ const rescheduleSession = (session: Session) => {
 const cancelSession = (session: Session) => {
   if (confirm(`Are you sure you want to cancel the session with ${session.client_name}?`)) {
     console.log('Cancelling session:', session);
-    // Update session status
     const index = allSessions.value.findIndex(s => s.id === session.id);
     if (index !== -1) {
       allSessions.value[index].status = 'cancelled';
@@ -494,7 +486,6 @@ const downloadRecording = (recording: RecordedSession) => {
 
 const saveSessionNotes = () => {
   if (selectedSession.value) {
-    // Update the session with new notes
     const index = allSessions.value.findIndex(s => s.id === selectedSession.value!.id);
     if (index !== -1) {
       allSessions.value[index].notes = sessionNotes.value;
@@ -506,7 +497,6 @@ const saveSessionNotes = () => {
   }
 };
 
-// Close menu when clicking outside
 document.addEventListener('click', (event) => {
   const target = event.target as HTMLElement;
   if (!target.closest('.relative')) {

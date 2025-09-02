@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden relative">
-      <!-- Close button -->
       <button
         @click="handleClose"
         class="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors z-10"
@@ -20,7 +19,6 @@
         <p class="text-green-100 mt-2">Sign in to your account</p>
       </div>
 
-      <!-- User Type Selection -->
       <div class="p-4 bg-gray-50 border-b">
         <label class="block text-sm font-medium text-gray-700 mb-2">Login as:</label>
         <div class="flex space-x-2">
@@ -60,8 +58,7 @@
         </div>
       </div>
 
-      <!-- SESSION EXPIRY MESSAGES - ADD THIS HERE -->
-      <!-- Session Expired Message -->
+
       <div v-if="sessionExpiredMessage.show" class="mx-6 mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
         <div class="flex items-center">
           <svg class="w-5 h-5 text-orange-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -77,7 +74,6 @@
         </div>
       </div>
 
-      <!-- Token Expiry Warning -->
       <div v-if="tokenExpiryInfo?.isExpiringSoon" class="mx-6 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div class="flex items-center">
           <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -93,7 +89,6 @@
         </div>
       </div>
 
-      <!-- Status message -->
       <div v-if="loginStatus.message" :class="`px-4 py-3 mx-6 mt-4 rounded-lg ${
         loginStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
       }`">
@@ -144,7 +139,6 @@
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
           </div>
 
-          <!-- OTP Field for Admin -->
           <div v-if="selectedUserType === 'admin' && showOTPField">
             <label for="otpCode" class="block text-sm font-medium text-gray-700 mb-1">
               OTP Code
@@ -240,16 +234,46 @@ import {
   ArrowRightIcon
 } from 'lucide-vue-next';
 
+interface TokenExpiryInfo {
+  expiresAt: Date;
+  hoursUntilExpiry: number;
+  minutesUntilExpiry: number;
+  isExpiringSoon: boolean;
+  timeUntilExpiry: number;
+}
+
+interface SessionExpiredMessage {
+  show: boolean;
+  userType: string;
+}
+
+interface LoginResponse {
+  token?: string;
+  user?: string;
+  userType?: string;
+  success?: boolean;
+  message?: string;
+}
+
+interface AdditionalAuthMethods {
+  verifyAdminOTP?: (username: string, otpCode: string) => Promise<LoginResponse>;
+}
+
 const router = useRouter();
-const { login, verifyAdminOTP, isLoading, getTokenExpiryInfo } = useAuth();
+const authComposable = useAuth();
 const { errors, validateLoginForm } = useValidation();
+
+const { login, isLoading, getTokenExpiryInfo } = authComposable;
+
+const verifyAdminOTP = (authComposable as ReturnType<typeof useAuth> & AdditionalAuthMethods).verifyAdminOTP || (() => {
+  throw new Error('verifyAdminOTP method not available');
+});
 
 const selectedUserType = ref<'user' | 'counselor' | 'admin'>('user');
 const showOTPField = ref(false);
 
-// ADD THESE NEW REACTIVE VARIABLES
-const sessionExpiredMessage = ref({ show: false, userType: '' });
-const tokenExpiryInfo = ref(null);
+const sessionExpiredMessage = ref<SessionExpiredMessage>({ show: false, userType: '' });
+const tokenExpiryInfo = ref<TokenExpiryInfo | null>(null);
 
 const formData = reactive({
   username: '',
@@ -263,54 +287,45 @@ const loginStatus = reactive({
   message: ''
 });
 
-// ADD THIS ONMOUNTED HOOK
 onMounted(() => {
-  // Check for session expired message
   if (typeof window !== 'undefined') {
-    // For now, we'll implement a simple check - you'll add TokenManager later
     const sessionExpired = sessionStorage.getItem('sessionExpired') === 'true';
     const previousUserType = sessionStorage.getItem('previousUserType') || '';
 
     if (sessionExpired) {
       sessionExpiredMessage.value = { show: true, userType: previousUserType };
 
-      // Pre-select the user type if we know what they were before
       if (previousUserType === 'counsellor') {
         selectedUserType.value = 'counselor';
       } else if (previousUserType === 'user') {
         selectedUserType.value = 'user';
       }
 
-      // Clear the session expired flag
       sessionStorage.removeItem('sessionExpired');
       sessionStorage.removeItem('previousUserType');
     }
   }
 
-  // Check token expiry for current session
   try {
     const expiryInfo = getTokenExpiryInfo();
     if (expiryInfo) {
-      tokenExpiryInfo.value = expiryInfo;
+      tokenExpiryInfo.value = expiryInfo as TokenExpiryInfo;
 
-      // Set up a timer to update expiry info every minute
       const updateTimer = setInterval(() => {
         const updatedInfo = getTokenExpiryInfo();
         if (updatedInfo) {
-          tokenExpiryInfo.value = updatedInfo;
+          tokenExpiryInfo.value = updatedInfo as TokenExpiryInfo;
 
-          // If token expires in less than 1 minute, clear timer
-          if (updatedInfo.minutesUntilExpiry < 1) {
+          if ((updatedInfo as TokenExpiryInfo).minutesUntilExpiry < 1) {
             clearInterval(updateTimer);
-            // Token will expire soon, the API client will handle the redirect
           }
         } else {
           clearInterval(updateTimer);
         }
-      }, 60000); // Update every minute
+      }, 60000);
     }
-  } catch (error) {
-    // getTokenExpiryInfo might not exist yet, ignore for now
+  } catch {
+    console.log('Token expiry info not available');
   }
 });
 
@@ -336,9 +351,9 @@ const handleSubmit = async () => {
           password: formData.password,
           rememberMe: formData.rememberMe,
           userType: 'admin'
-        });
+        }) as LoginResponse;
 
-        if (response.success) {
+        if (response?.success || response?.token) {
           showOTPField.value = true;
           loginStatus.success = true;
           loginStatus.message = 'OTP sent to your email. Please enter the code below.';
@@ -349,7 +364,7 @@ const handleSubmit = async () => {
           return;
         }
 
-        const response = await verifyAdminOTP(formData.username, formData.otpCode);
+        const response = await verifyAdminOTP(formData.username, formData.otpCode) as LoginResponse;
 
         if (response.token) {
           loginStatus.success = true;
@@ -366,10 +381,9 @@ const handleSubmit = async () => {
         password: formData.password,
         rememberMe: formData.rememberMe,
         userType: selectedUserType.value
-      });
+      }) as LoginResponse;
 
       if (response?.token) {
-        // CLEAR ANY SESSION EXPIRED MESSAGES
         sessionExpiredMessage.value = { show: false, userType: '' };
 
         loginStatus.success = true;
@@ -396,6 +410,7 @@ const handleSubmit = async () => {
     } else {
       loginStatus.message = 'An error occurred during login';
     }
+    console.error('Login error:', error);
   }
 };
 

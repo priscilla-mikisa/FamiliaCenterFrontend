@@ -8,5 +8,4 @@
 </template>
 
 <script setup lang="ts">
-// Counselor settings component
 </script>

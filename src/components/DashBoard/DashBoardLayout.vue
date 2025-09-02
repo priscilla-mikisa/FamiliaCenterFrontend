@@ -120,7 +120,6 @@ import {
   UserIcon,
   LogOutIcon
 } from 'lucide-vue-next';
-// import LogoutModal from './LogoutModal.vue';
 
 const route = useRoute();
 const isMenuOpen = ref(false);

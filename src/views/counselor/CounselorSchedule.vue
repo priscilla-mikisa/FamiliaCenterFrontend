@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header with Date Navigation -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <div class="flex items-center space-x-4">
@@ -31,9 +30,7 @@
       </div>
     </div>
 
-    <!-- Calendar View -->
     <div class="bg-white rounded-xl shadow overflow-hidden">
-      <!-- Week Header -->
       <div class="grid grid-cols-8 border-b border-gray-200">
         <div class="p-4 text-center font-medium text-gray-500">Time</div>
         <div
@@ -46,7 +43,6 @@
         </div>
       </div>
 
-      <!-- Time Slots -->
       <div class="max-h-96 overflow-y-auto">
         <div
           v-for="hour in timeSlots"
@@ -77,7 +73,6 @@
       </div>
     </div>
 
-    <!-- Today's Summary -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="bg-white rounded-xl shadow p-6">
         <h3 class="text-lg font-semibold mb-4">Today's Appointments</h3>
@@ -150,7 +145,6 @@
       </div>
     </div>
 
-    <!-- New Appointment Modal -->
     <div v-if="showNewAppointment" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-md w-full">
         <div class="p-6 border-b">
@@ -284,7 +278,6 @@ const daysOfWeek = [
   { label: 'Sun', value: 'sunday' }
 ];
 
-// Mock data
 const clients = ref([
   { id: 1, name: 'John & Mary Smith' },
   { id: 2, name: 'Jennifer Wilson' },
@@ -406,7 +399,6 @@ const startSession = (appointmentId: number) => {
 const createAppointment = () => {
   console.log('Creating appointment:', newAppointment.value);
   showNewAppointment.value = false;
-  // Reset form
   newAppointment.value = {
     clientId: '',
     date: '',
@@ -418,7 +410,6 @@ const createAppointment = () => {
 };
 
 onMounted(() => {
-  // Set current week start to Monday
   const today = new Date();
   const monday = new Date(today);
   monday.setDate(today.getDate() - today.getDay() + 1);

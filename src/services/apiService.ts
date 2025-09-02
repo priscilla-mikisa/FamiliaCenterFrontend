@@ -1,7 +1,5 @@
-// src/services/apiService.ts - Fixed version with proper error handling
 import apiClient from './apiClient';
 
-// API Types (keeping your existing ones)
 export interface UserRegisterRequest {
   first_name: string;
   last_name: string;
@@ -56,7 +54,6 @@ export interface AcceptSessionRequest {
   session_id: string;
 }
 
-// Response interfaces
 export interface UserResponse {
   id: string;
   first_name: string;
@@ -117,7 +114,6 @@ export interface CurrentSubscription {
   next_billing_date?: string;
 }
 
-// Auth Service
 export const AuthService = {
   async registerUser(userData: UserRegisterRequest) {
     const response = await apiClient.post('/users/register', userData);
@@ -176,7 +172,6 @@ export const AuthService = {
   },
 
   async getProfile() {
-    // Since this endpoint doesn't exist in the API, use local storage
     const userStr = localStorage.getItem('user');
     if (userStr) {
       return { data: JSON.parse(userStr) };
@@ -185,7 +180,6 @@ export const AuthService = {
   },
 
   async updateProfile(userData: Partial<UserResponse | CounsellorResponse>) {
-    // Since this endpoint doesn't exist in the API, update local storage
     const currentUserStr = localStorage.getItem('user');
     if (currentUserStr) {
       const currentUser = JSON.parse(currentUserStr);
@@ -209,7 +203,6 @@ export const AuthService = {
   }
 };
 
-// Sessions Service
 export const SessionService = {
   async getUserSessions() {
     const response = await apiClient.get('/users/sessions/all');
@@ -241,7 +234,6 @@ export const SessionService = {
   }
 };
 
-// Counsellor Service
 export const CounsellorService = {
   async getCounsellorSessions() {
     const response = await apiClient.get('/counsellor/sessions/all');
@@ -254,7 +246,6 @@ export const CounsellorService = {
   }
 };
 
-// Users Service
 export const UserService = {
   async getAllCounsellors() {
     const response = await apiClient.get('/users/counsellors/all');
@@ -262,7 +253,6 @@ export const UserService = {
   },
 
   async getUser(id: string) {
-    // This endpoint doesn't exist in the API, so return local data
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
@@ -278,20 +268,17 @@ export const UserService = {
   },
 
   async updateUser(id: string, userData: Partial<UserResponse>) {
-    // This endpoint doesn't exist in the API, so update local storage
     return AuthService.updateProfile(userData);
   }
 };
 
-// Subscriptions Service
 export const SubscriptionService = {
   async getSubscriptionPlans() {
     try {
       const response = await apiClient.get('/subscriptions');
       return response.data;
     } catch (error) {
-      console.warn('Subscriptions API not available, using mock data');
-      // Return mock subscription plans
+      console.warn('Subscriptions API not available, using mock data. Error:', error);
       return {
         data: [
           {
@@ -331,8 +318,7 @@ export const SubscriptionService = {
       const response = await apiClient.post('/subscriptions/subscribe', { plan_id: planId });
       return response.data;
     } catch (error) {
-      console.warn('Subscribe API not available, using mock response');
-      // Mock successful subscription
+      console.warn('Subscribe API not available, using mock response. Error:', error);
       const mockSubscription: CurrentSubscription = {
         id: `sub_${Date.now()}`,
         plan_id: planId,
@@ -353,7 +339,7 @@ export const SubscriptionService = {
       const response = await apiClient.post('/subscriptions/cancel');
       return response.data;
     } catch (error) {
-      console.warn('Cancel subscription API not available, using mock response');
+      console.warn('Cancel subscription API not available, using mock response. Error:', error);
       localStorage.removeItem('currentSubscription');
       return { success: true, message: 'Subscription cancelled successfully' };
     }
@@ -364,7 +350,7 @@ export const SubscriptionService = {
       const response = await apiClient.get('/subscriptions/current');
       return response.data;
     } catch (error) {
-      console.warn('Current subscription API not available, using local storage');
+      console.warn('Current subscription API not available, using local storage. Error:', error);
       const subStr = localStorage.getItem('currentSubscription');
       if (subStr) {
         return { subscription: JSON.parse(subStr) };
@@ -374,7 +360,6 @@ export const SubscriptionService = {
   }
 };
 
-// Mock services for features not yet implemented in backend
 export const ProgramService = {
   async getPrograms() {
     return {
@@ -479,7 +464,6 @@ export const ResourceService = {
   }
 };
 
-// Legacy interfaces for backward compatibility
 export interface User {
   id: string;
   first_name: string;

@@ -1,7 +1,6 @@
-// src/composables/useAuth.ts - Updated with proper token expiry handling
 import { ref } from 'vue';
 import apiClient from '@/services/apiClient';
-import { TokenManager } from '@/services/tokenManager';
+import { TokenManager, type UserData } from '@/services/tokenManager';
 
 interface SignUpData {
   name: string;
@@ -24,11 +23,28 @@ interface LoginCredentials {
   userType?: 'user' | 'counselor' | 'admin';
 }
 
+interface ApiResponse {
+  data: {
+    token?: string;
+    user?: UserData;
+    counsellor?: UserData;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+const toUserData = (data: unknown): UserData => {
+  if (typeof data === 'object' && data !== null) {
+    return data as UserData;
+  }
+  return {};
+};
+
 export const useAuth = () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const success = ref<string | null>(null);
-  const user = ref(null);
+  const user = ref<UserData | null>(null);
 
   const signUp = async (userData: SignUpData) => {
     isLoading.value = true;
@@ -36,45 +52,45 @@ export const useAuth = () => {
     success.value = null;
 
     try {
-      let response;
-      let endpoint;
-      let payload;
+      let endpoint: string;
+      const payload: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        password: string;
+        confirmPassword: string;
+        phone_number: string;
+        country_code: string;
+        speciality?: string;
+        bio?: string;
+        salutation?: string;
+        account_type?: string;
+      } = {
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        password: userData.password,
+        confirmPassword: userData.confirmPassword,
+        phone_number: userData.phone_number,
+        country_code: userData.country_code,
+      };
 
       if (userData.userRole === 'counselor') {
         endpoint = '/counsellor/register';
-        payload = {
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          email: userData.email,
-          password: userData.password,
-          confirmPassword: userData.confirmPassword,
-          speciality: userData.specialization || 'General Counseling',
-          phone_number: userData.phone_number,
-          country_code: userData.country_code,
-          bio: '',
-          salutation: ''
-        };
+        payload.speciality = userData.specialization || 'General Counseling';
+        payload.bio = '';
+        payload.salutation = '';
       } else {
         endpoint = '/users/register';
-        payload = {
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          email: userData.email,
-          password: userData.password,
-          confirmPassword: userData.confirmPassword,
-          account_type: userData.account_type,
-          country_code: userData.country_code,
-          phone_number: userData.phone_number,
-        };
+        payload.account_type = userData.account_type;
       }
 
-      response = await apiClient.post(endpoint, payload);
+      const response: ApiResponse = await apiClient.post(endpoint, payload);
 
       if (response.data.token) {
         const userType = userData.userRole === 'counselor' ? 'counsellor' : 'user';
-        const userInfo = response.data.user || response.data.counsellor;
+        const userInfo = toUserData(response.data.user || response.data.counsellor);
 
-        // Store token with remember me as true for registration
         TokenManager.storeToken(response.data.token, userInfo, userType, true);
         user.value = userInfo;
         success.value = `${userType === 'counsellor' ? 'Counsellor' : 'User'} account created successfully!`;
@@ -99,8 +115,8 @@ export const useAuth = () => {
 
     try {
       const userType = credentials.userType || 'user';
-      let endpoint;
-      let payload = {
+      let endpoint: string;
+      const payload = {
         email: credentials.username,
         password: credentials.password
       };
@@ -114,13 +130,12 @@ export const useAuth = () => {
         endpoint = '/users/auth/login';
       }
 
-      const response = await apiClient.post(endpoint, payload);
+      const response: ApiResponse = await apiClient.post(endpoint, payload);
 
       if (response.data.token) {
-        const userInfo = response.data.user || response.data.counsellor;
+        const userInfo = toUserData(response.data.user || response.data.counsellor);
         const actualUserType = userType === 'counselor' ? 'counsellor' : 'user';
 
-        // Use TokenManager to store token properly
         TokenManager.storeToken(
           response.data.token,
           userInfo,
@@ -172,7 +187,7 @@ export const useAuth = () => {
     try {
       const userDataStr = localStorage.getItem('user');
       if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
+        const userData: UserData = JSON.parse(userDataStr);
         user.value = userData;
         return { data: userData };
       } else {
@@ -184,9 +199,9 @@ export const useAuth = () => {
     }
   };
 
-  const updateProfile = async (userData: any) => {
+  const updateProfile = async (userData: UserData) => {
     try {
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const currentUser: UserData = JSON.parse(localStorage.getItem('user') || '{}');
       const updatedUser = { ...currentUser, ...userData };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       user.value = updatedUser;
@@ -212,19 +227,16 @@ export const useAuth = () => {
     return authStatus.userId;
   };
 
-  // Check if session expired and handle it
   const checkSessionStatus = () => {
     const authStatus = TokenManager.getAuthStatus();
 
     if (!authStatus.isAuthenticated && authStatus.wasRemembered) {
-      // User had "remember me" but token is gone/expired
       return { sessionExpired: true, userType: authStatus.userType };
     }
 
     return { sessionExpired: false, userType: null };
   };
 
-  // Get token expiry info for UI display
   const getTokenExpiryInfo = () => {
     const token = TokenManager.getValidToken();
     if (!token) return null;
@@ -239,7 +251,7 @@ export const useAuth = () => {
       expiresAt: new Date(tokenInfo.expiresAt * 1000),
       hoursUntilExpiry,
       minutesUntilExpiry,
-      isExpiringSoon: hoursUntilExpiry < 1, // Less than 1 hour
+      isExpiringSoon: hoursUntilExpiry < 1, 
       timeUntilExpiry: tokenInfo.timeUntilExpiry
     };
   };

@@ -32,7 +32,7 @@
         <div>
           <h3 class="font-medium text-blue-900">{{ currentSubscription.plan_name }}</h3>
           <p class="text-blue-700 text-sm">
-            Next billing: {{ formatDate(currentSubscription.next_billing_date) }}
+            Next billing: {{ formatDate(currentSubscription.next_billing_date || '') }}
           </p>
         </div>
         <router-link
@@ -269,12 +269,55 @@ import { useSessions } from '@/composables/useSessions';
 import { usePrograms } from '@/composables/usePrograms';
 import { useSubscriptions } from '@/composables/useSubscriptions';
 import { useAuth } from '@/composables/useAuth';
-import type { Session } from '@/types';
 
-const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, fetchCounsellors, getSessionStatusText, getSessionStatusClass, formatSessionTime } = useSessions();
+// Define proper interfaces for type safety
+interface SessionData {
+  id: string;
+  title?: string;
+  description?: string;
+  start_time: string;
+  end_time?: string;
+  session_date: string;
+  session_time: string;
+  duration: number;
+  counselor: {
+    id: string;
+    name: string;
+    specialization: string;
+  };
+  counsellor_name?: string;
+  status: string;
+  notes?: string;
+  feedback?: string;
+  meeting_link?: string;
+}
+
+interface UserProfile {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  id?: string;
+}
+
+// Get composables - use proper destructuring with fallbacks for missing properties
+const sessionsComposable = useSessions();
+const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, getSessionStatusText, getSessionStatusClass, formatSessionTime } = sessionsComposable;
+
+// Handle potentially missing fetchCounsellors method
+const fetchCounsellors = (sessionsComposable as typeof sessionsComposable & { fetchCounsellors?: () => Promise<void> }).fetchCounsellors || (() => Promise.resolve());
+
 const { enrolledPrograms, fetchPrograms } = usePrograms();
 const { currentSubscription, getCurrentSubscription } = useSubscriptions();
-const { user, getProfile } = useAuth();
+const authComposable = useAuth();
+const { getProfile } = authComposable;
+
+// Handle user type properly
+const user = ref<UserProfile | null>(null);
+
+// Set user from auth composable if available
+if ('user' in authComposable && authComposable.user && authComposable.user.value) {
+  user.value = authComposable.user.value as unknown as UserProfile;
+}
 
 const recentActivity = ref([
   {
@@ -307,7 +350,7 @@ const stats = computed(() => ({
   resources: 24, // This should come from resources API when available
 }));
 
-const canJoinSession = (session: Session) => {
+const canJoinSession = (session: SessionData) => {
   if (session.status !== 'confirmed' && session.status !== 'accepted') {
     return false;
   }
@@ -320,7 +363,7 @@ const canJoinSession = (session: Session) => {
   return timeDiff <= 15 * 60 * 1000 && timeDiff >= -60 * 60 * 1000;
 };
 
-const joinSession = (session: Session) => {
+const joinSession = (session: SessionData) => {
   // In a real implementation, this would open the meeting link
   if (session.meeting_link) {
     window.open(session.meeting_link, '_blank');
@@ -342,9 +385,14 @@ const formatDate = (dateString: string) => {
 onMounted(async () => {
   try {
     // Load user profile
-    await getProfile().catch(() => {
+    try {
+      const profileData = await getProfile();
+      if (profileData && 'data' in profileData) {
+        user.value = profileData.data as UserProfile;
+      }
+    } catch {
       console.log('Could not load user profile');
-    });
+    }
 
     // Load dashboard data in parallel
     await Promise.all([

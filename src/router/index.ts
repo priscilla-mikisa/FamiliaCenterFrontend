@@ -1,10 +1,8 @@
-// src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import SignUpView from '@/views/SignUpView.vue';
 
-// Dashboard Views
 import DashBoardLayout from '@/components/DashBoard/DashBoardLayout.vue';
 import DashboardOverview from '@/views/dashboard/DashboardOverview.vue';
 import ProgramsView from '@/views/dashboard/ProgramsView.vue';
@@ -14,7 +12,6 @@ import SettingsView from '@/views/dashboard/SettingsView.vue';
 import JoinSessionView from '@/views/dashboard/JoinSessionView.vue';
 import SubscriptionPlans from '@/views/dashboard/SubscriptionPlans.vue';
 
-// Counselor Dashboard Views
 import CounselorDashboardLayout from '@/components/Counselor/CounselorDashboardLayout.vue';
 import CounselorOverview from '@/views/counselor/CounselorOverview.vue';
 import CounselorClients from '@/views/counselor/CounselorClients.vue';
@@ -24,12 +21,10 @@ import CounselorPrograms from '@/views/counselor/CounselorPrograms.vue';
 import CounselorResources from '@/views/counselor/CounselorResources.vue';
 import CounselorSettings from '@/views/counselor/CounselorSettings.vue';
 
-// Check if user is authenticated
 const isAuthenticated = (): boolean => {
   return !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
 };
 
-// Get user type
 const getUserType = (): string | null => {
   return localStorage.getItem('userType');
 };
@@ -37,7 +32,6 @@ const getUserType = (): string | null => {
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // Public routes (marketing site)
     {
       path: '/',
       name: 'home',
@@ -57,7 +51,6 @@ const router = createRouter({
       meta: { requiresGuest: true }
     },
 
-    // Protected dashboard routes for users/patients
     {
       path: '/dashboard',
       component: DashBoardLayout,
@@ -102,7 +95,6 @@ const router = createRouter({
       ]
     },
 
-    // Protected dashboard routes for counselors
     {
       path: '/counselor-dashboard',
       component: CounselorDashboardLayout,
@@ -146,7 +138,6 @@ const router = createRouter({
       ]
     },
 
-    // Demo routes (no auth required) - keep for demonstration purposes
     {
       path: '/demo',
       component: DashBoardLayout,
@@ -185,7 +176,6 @@ const router = createRouter({
       ]
     },
 
-    // Error pages
     {
       path: '/404',
       name: 'not-found',
@@ -197,11 +187,9 @@ const router = createRouter({
       component: () => import('@/views/Unauthorized.vue')
     },
 
-    // Catch-all redirect
     {
       path: '/:pathMatch(.*)*',
       redirect: () => {
-        // If user is authenticated, redirect based on their user type
         if (isAuthenticated()) {
           const userType = getUserType();
           switch (userType) {
@@ -213,7 +201,6 @@ const router = createRouter({
               return '/dashboard';
           }
         }
-        // If not authenticated, redirect to home
         return '/';
       }
     }
@@ -232,12 +219,10 @@ const router = createRouter({
   }
 });
 
-// Navigation guards
 router.beforeEach((to, from, next) => {
   const authenticated = isAuthenticated();
   const userType = getUserType();
 
-  // Redirect authenticated users away from public pages
   if (to.meta.requiresGuest && authenticated) {
     switch (userType) {
       case 'counsellor':
@@ -249,16 +234,13 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // Redirect unauthenticated users to login for protected routes
   if (to.meta.requiresAuth && !authenticated) {
     return next('/login');
   }
 
-  // Check user type permissions for protected routes
   if (to.meta.requiresAuth && to.meta.allowedUserTypes) {
     const allowedTypes = to.meta.allowedUserTypes as string[];
     if (userType && !allowedTypes.includes(userType)) {
-      // Redirect to appropriate dashboard for their user type
       switch (userType) {
         case 'counsellor':
           return next('/counselor-dashboard');
@@ -270,7 +252,6 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // Handle automatic redirects for authenticated users accessing root paths
   if (authenticated && to.path === '/') {
     switch (userType) {
       case 'counsellor':
@@ -285,7 +266,6 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-// Global error handler for routes
 router.onError((error) => {
   console.error('Router error:', error);
 });
