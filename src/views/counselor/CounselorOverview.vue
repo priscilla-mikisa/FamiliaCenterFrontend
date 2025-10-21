@@ -101,9 +101,7 @@
                         {{ getSessionTopic(session) }}
                       </span>
                     </div>
-                    <!-- <div v-if="session.bio" class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
-                      <strong>Patient Notes:</strong> {{ session.bio }}
-                    </div> -->
+                    
                   </div>
                   <div class="flex items-center space-x-2 ml-4">
                     <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSessionStatusClass(getSessionAccepted(session))}`">
@@ -177,7 +175,6 @@
       </div>
 
       <div class="space-y-6">
-        <!-- Pending Sessions (Requires Action) -->
         <div v-if="pendingSessions.length > 0" class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold text-gray-900">Pending Approval</h3>
@@ -392,14 +389,12 @@ const uniquePatients = computed(() => {
         userId?: string | number;
       };
       const s = session as SessionLike;
-      // prefer nested user id, then common variants, then fallback to null
       return s.user?.id ?? s.user_id ?? s.user?.user_id ?? s.patient_id ?? s.user?.userId ?? s.user?.email ?? null;
     })
     .filter(Boolean);
   return new Set(ids).size;
 });
 
-// Simple local tasks list (replace with API-backed data if available)
 type Task = {
   id: string;
   description: string;

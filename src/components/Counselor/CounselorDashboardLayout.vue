@@ -8,7 +8,7 @@
         <div class="flex items-center space-x-2">
           <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
             <img
-              src="/images/logo.png"
+              src="/images/logo.jpeg"
               alt="logo"
               class="w-6 h-6"
             />

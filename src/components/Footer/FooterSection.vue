@@ -6,7 +6,7 @@
           <div class="flex items-center space-x-2 mb-4">
             <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
               <img
-                src="/images/logo.png"
+                src="/images/logo.jpeg"
                 alt="logo"
                 class="w-6 h-6"
               />
