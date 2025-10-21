@@ -42,7 +42,7 @@ export const useResources = () => {
   const uploadResource = async (formData: FormData) => {
     try {
       const response = await ResourceService.uploadResource(formData);
-      await fetchResources(); // Refresh the list
+      await fetchResources(); 
       return response;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to upload resource';

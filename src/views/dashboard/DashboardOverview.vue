@@ -1,4 +1,4 @@
-<!-- src/views/dashboard/DashboardOverview.vue -->
+<!-- src/views/dashboard/DashboardOverview.vue - Replace your existing file -->
 <template>
   <div class="space-y-6">
     <!-- Welcome Banner -->
@@ -50,7 +50,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500">Total Sessions</p>
-            <p class="text-2xl font-bold mt-1">{{ stats.totalSessions }}</p>
+            <p class="text-2xl font-bold mt-1">{{ upcomingSessions.length + pastSessions.length }}</p>
           </div>
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
             <VideoIcon class="w-6 h-6 text-green-600" />
@@ -65,7 +65,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500">Active Programs</p>
-            <p class="text-2xl font-bold mt-1">{{ stats.activePrograms }}</p>
+            <p class="text-2xl font-bold mt-1">{{ enrolledPrograms.length }}</p>
           </div>
           <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
             <BookOpenIcon class="w-6 h-6 text-blue-600" />
@@ -77,7 +77,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500">Resources</p>
-            <p class="text-2xl font-bold mt-1">{{ stats.resources }}</p>
+            <p class="text-2xl font-bold mt-1">24</p>
           </div>
           <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
             <FileTextIcon class="w-6 h-6 text-purple-600" />
@@ -104,10 +104,18 @@
       <div class="lg:col-span-2">
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
+              <button
+                @click="showBookingModal = true"
+                class="text-green-600 hover:text-green-800 text-sm font-medium"
+              >
+                Book New Session
+              </button>
+            </div>
           </div>
           <div class="p-6">
-            <div v-if="sessionsLoading" class="flex justify-center py-8">
+            <div v-if="loading" class="flex justify-center py-8">
               <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
             </div>
             <div v-else-if="upcomingSessions.length > 0" class="space-y-4">
@@ -132,29 +140,29 @@
                       </div>
                       <span class="text-sm text-gray-600">{{ session.counselor.specialization }}</span>
                     </div>
+                    <div v-if="session.notes" class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
+                      <strong>Notes:</strong> {{ session.notes }}
+                    </div>
                   </div>
-                  <span :class="`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSessionStatusClass(session.status)}`">
-                    {{ getSessionStatusText(session.status) }}
-                  </span>
-                </div>
-                <div class="mt-4 flex space-x-2">
-                  <button
-                    v-if="canJoinSession(session)"
-                    @click="joinSession(session)"
-                    class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm text-center"
-                  >
-                    Join Session
-                  </button>
-                  <router-link
-                    v-else
-                    :to="`/dashboard/sessions/join/${session.id}`"
-                    class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm text-center"
-                  >
-                    View Session
-                  </router-link>
-                  <button class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
-                    Reschedule
-                  </button>
+                  <div class="flex flex-col space-y-2">
+                    <span :class="`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSessionStatusClass(session.status)}`">
+                      {{ getSessionStatusText(session.status) }}
+                    </span>
+                    <button
+                      v-if="canJoinSession(session)"
+                      @click="joinSession(session)"
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    >
+                      Join Session
+                    </button>
+                    <router-link
+                      v-else
+                      :to="`/dashboard/sessions/join/${session.id}`"
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm text-center"
+                    >
+                      View Session
+                    </router-link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -162,20 +170,21 @@
               <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <CalendarIcon class="w-8 h-8 text-gray-400" />
               </div>
-              <p class="text-gray-600">No upcoming sessions scheduled</p>
-              <router-link
-                to="/dashboard/sessions"
-                class="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              <p class="text-gray-600 mb-4">No upcoming sessions scheduled</p>
+              <button
+                @click="showBookingModal = true"
+                class="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
               >
-                Book a Session
-              </router-link>
+                Book Your First Session
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column - Quick Actions -->
+      <!-- Right Column -->
       <div>
+        <!-- Quick Actions -->
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
@@ -249,11 +258,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Book Session Modal -->
+    <BookSessionModal
+      :isOpen="showBookingModal"
+      @close="showBookingModal = false"
+      @success="handleBookingSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import {
   VideoIcon,
   BookOpenIcon,
@@ -269,12 +285,26 @@ import { useSessions } from '@/composables/useSessions';
 import { usePrograms } from '@/composables/usePrograms';
 import { useSubscriptions } from '@/composables/useSubscriptions';
 import { useAuth } from '@/composables/useAuth';
+import BookSessionModal from '@/components/Sessions/BookSessionModal.vue';
 import type { Session } from '@/types';
 
-const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, fetchCounsellors, getSessionStatusText, getSessionStatusClass, formatSessionTime } = useSessions();
+const {
+  upcomingSessions,
+  pastSessions,
+  counsellors,
+  loading,
+  fetchSessions,
+  fetchCounsellors,
+  getSessionStatusText,
+  getSessionStatusClass,
+  formatSessionTime
+} = useSessions();
+
 const { enrolledPrograms, fetchPrograms } = usePrograms();
 const { currentSubscription, getCurrentSubscription } = useSubscriptions();
 const { user, getProfile } = useAuth();
+
+const showBookingModal = ref(false);
 
 const recentActivity = ref([
   {
@@ -300,13 +330,6 @@ const recentActivity = ref([
   }
 ]);
 
-// Computed stats based on real data
-const stats = computed(() => ({
-  totalSessions: upcomingSessions.value.length + 8, // Add past sessions count when available
-  activePrograms: enrolledPrograms.value.length,
-  resources: 24, // This should come from resources API when available
-}));
-
 const canJoinSession = (session: Session) => {
   if (session.status !== 'confirmed' && session.status !== 'accepted') {
     return false;
@@ -316,12 +339,10 @@ const canJoinSession = (session: Session) => {
   const now = new Date();
   const timeDiff = sessionDateTime.getTime() - now.getTime();
 
-  // Can join 15 minutes before and up to session end time
   return timeDiff <= 15 * 60 * 1000 && timeDiff >= -60 * 60 * 1000;
 };
 
 const joinSession = (session: Session) => {
-  // In a real implementation, this would open the meeting link
   if (session.meeting_link) {
     window.open(session.meeting_link, '_blank');
   } else {
@@ -339,14 +360,14 @@ const formatDate = (dateString: string) => {
   });
 };
 
+const handleBookingSuccess = () => {
+  showBookingModal.value = false;
+  fetchSessions();
+};
+
 onMounted(async () => {
   try {
-    // Load user profile
-    await getProfile().catch(() => {
-      console.log('Could not load user profile');
-    });
-
-    // Load dashboard data in parallel
+    await getProfile().catch(() => console.log('Could not load user profile'));
     await Promise.all([
       fetchSessions().catch(() => console.log('Could not load sessions')),
       fetchPrograms().catch(() => console.log('Could not load programs')),

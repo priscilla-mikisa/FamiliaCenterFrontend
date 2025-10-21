@@ -16,14 +16,18 @@
           </p>
 
           <div class="flex flex-col sm:flex-row gap-4 mb-10">
-            <button class="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center space-x-2">
-              <span>Explore Programs</span>
-              <ArrowRightIcon class="w-5 h-5" />
-            </button>
-            <button class="px-8 py-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center space-x-2">
-              <PlayIcon class="w-5 h-5" />
-              <span>How It Works</span>
-            </button>
+            <router-link to="/login">
+              <button class="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center space-x-2">
+                <span>Explore Programs</span>
+                <ArrowRightIcon class="w-5 h-5" />
+              </button>
+            </router-link>
+            <router-link to="/how-it-works">
+              <button class="px-8 py-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center space-x-2">
+                <PlayIcon class="w-5 h-5" />
+                <span>How It Works</span>
+              </button>
+            </router-link>  
           </div>
 
           <div class="flex items-center space-x-4">

@@ -68,7 +68,6 @@ export interface Resource {
   created_at: string;
 }
 
-// Add these missing interfaces that your components need
 export interface RecordedSession {
   id: number;
   client_name: string;

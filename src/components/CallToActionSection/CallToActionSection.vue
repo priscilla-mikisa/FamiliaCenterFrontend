@@ -8,9 +8,11 @@
         Get started with confidence - all first-time participants receive a free consultation.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <router-link to="/login">
         <button class="px-8 py-4 bg-white text-green-600 rounded-lg hover:bg-gray-50 font-medium shadow-md">
           Browse Programs
         </button>
+        </router-link>
         <button class="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-600 font-medium">
           Free 15-Min Consultation
         </button>

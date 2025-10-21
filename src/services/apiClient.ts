@@ -1,4 +1,4 @@
-// src/services/apiClient.ts - Final version with TokenManager integration
+// src/services/apiClient.ts - Replace your existing file
 import axios from 'axios';
 import { TokenManager } from './tokenManager';
 
@@ -17,13 +17,9 @@ apiClient.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Added token to request:', config.url);
     } else {
-      // Check if we had tokens that are now expired
-      const authStatus = TokenManager.getAuthStatus();
-      if (authStatus.wasRemembered || authStatus.userType) {
-        console.warn('Token expired or missing, handling expired session');
-        TokenManager.handleExpiredToken();
-      }
+      console.log('No token available for request:', config.url);
     }
 
     return config;
@@ -37,6 +33,7 @@ apiClient.interceptors.request.use(
 // Response interceptor - handle authentication errors
 apiClient.interceptors.response.use(
   (response) => {
+    console.log('API Success:', response.config.url, response.status);
     return response;
   },
   (error) => {
@@ -47,7 +44,7 @@ apiClient.interceptors.response.use(
     });
 
     if (error.response?.status === 401 || error.response?.status === 403) {
-      console.warn('Authentication failed - handling expired token');
+      console.warn('Authentication failed - redirecting to login');
       TokenManager.handleExpiredToken();
     }
 

@@ -211,7 +211,6 @@ type Client = {
 
 const selectedClient = ref<Client | null>(null);
 
-// Mock client data
 const clients = ref([
   {
     id: 1,

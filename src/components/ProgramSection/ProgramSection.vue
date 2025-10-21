@@ -55,18 +55,22 @@
               </div>
             </div>
             <div class="px-6 pb-6">
-              <button class="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
-                View Program Details
-              </button>
+              <router-link to="/login">
+                <button class="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
+                  View Program Details
+                </button>
+              </router-link>
             </div>
           </div>
         </div>
       </div>
 
       <div class="text-center mt-8">
-        <button class="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 font-medium">
-          View All Programs
-        </button>
+        <router-link to="/login">
+          <button class="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 font-medium">
+            View All Programs
+          </button>
+        </router-link>
       </div>
     </div>
   </section>
