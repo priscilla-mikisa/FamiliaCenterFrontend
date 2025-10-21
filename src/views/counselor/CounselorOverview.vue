@@ -1,7 +1,5 @@
-<!-- src/views/counselor/CounselorOverview.vue - Simplified MVP -->
 <template>
   <div class="space-y-6">
-    <!-- Welcome Banner -->
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
       <div class="flex flex-col md:flex-row md:items-center justify-between">
         <div>
@@ -17,7 +15,6 @@
       </div>
     </div>
 
-    <!-- Stats Overview -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between">
@@ -74,9 +71,7 @@
       </div>
     </div>
 
-    <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Today's Schedule -->
       <div class="lg:col-span-2">
         <div class="bg-white rounded-xl shadow">
           <div class="px-6 py-4 border-b">
@@ -103,20 +98,20 @@
                     </div>
                     <div class="mt-2">
                       <span class="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
-                        {{ session.topic }}
+                        {{ getSessionTopic(session) }}
                       </span>
                     </div>
-                    <div v-if="session.bio" class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
+                    <!-- <div v-if="session.bio" class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
                       <strong>Patient Notes:</strong> {{ session.bio }}
-                    </div>
+                    </div> -->
                   </div>
                   <div class="flex items-center space-x-2 ml-4">
-                    <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSessionStatusClass(session.is_counsellor_accepted)}`">
-                      {{ session.is_counsellor_accepted ? 'Accepted' : 'Pending' }}
+                    <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSessionStatusClass(getSessionAccepted(session))}`">
+                      {{ getSessionAccepted(session) ? 'Accepted' : 'Pending' }}
                     </span>
                     <div class="flex flex-col space-y-1">
                       <button
-                        v-if="!session.is_counsellor_accepted"
+                        v-if="!getSessionAccepted(session)"
                         @click="handleAcceptSession(session.id)"
                         :disabled="acceptingSession === session.id"
                         class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
@@ -124,7 +119,7 @@
                         {{ acceptingSession === session.id ? 'Accepting...' : 'Accept' }}
                       </button>
                       <button
-                        v-if="canStartSession(session) && session.is_counsellor_accepted"
+                        v-if="canStartSession(session) && getSessionAccepted(session)"
                         @click="startSession(session)"
                         class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
                       >
@@ -167,10 +162,10 @@
               >
                 <div>
                   <div class="font-medium text-sm">{{ getPatientName(session) }}</div>
-                  <div class="text-xs text-gray-500">{{ session.topic }} • {{ formatSessionTime(session.session_date, session.session_time) }}</div>
+                  <div class="text-xs text-gray-500">{{ getSessionTopic(session) }} • {{ formatSessionTime(session.session_date, session.session_time) }}</div>
                 </div>
-                <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(session.is_counsellor_accepted)}`">
-                  {{ session.is_counsellor_accepted ? 'Accepted' : 'Pending' }}
+                <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(getSessionAccepted(session))}`">
+                  {{ getSessionAccepted(session) ? 'Accepted' : 'Pending' }}
                 </span>
               </div>
             </div>
@@ -181,7 +176,6 @@
         </div>
       </div>
 
-      <!-- Right Column -->
       <div class="space-y-6">
         <!-- Pending Sessions (Requires Action) -->
         <div v-if="pendingSessions.length > 0" class="bg-white rounded-xl shadow">
@@ -197,7 +191,7 @@
                 class="border border-yellow-200 bg-yellow-50 rounded-lg p-3"
               >
                 <div class="font-medium text-sm text-gray-900">{{ getPatientName(session) }}</div>
-                <div class="text-xs text-gray-600 mb-2">{{ session.topic }}</div>
+                <div class="text-xs text-gray-600 mb-2">{{ getSessionTopic(session) }}</div>
                 <div class="text-xs text-gray-500 mb-3">{{ formatSessionTime(session.session_date, session.session_time) }}</div>
                 <div class="flex space-x-2">
                   <button
@@ -276,10 +270,32 @@
                 <span class="text-sm text-gray-600">Accepted Sessions</span>
                 <span class="font-medium text-green-600">{{ acceptedSessions.length }}</span>
               </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Completed Sessions</span>
-                <span class="font-medium text-blue-600">{{ completedSessions.length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow">
+          <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900">Pending Tasks</h3>
+          </div>
+          <div class="p-6">
+            <div class="space-y-3">
+              <div v-for="task in pendingTasks" :key="task.id" class="flex items-center space-x-3">
+                <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span class="text-sm text-gray-900">{{ task.description }}</span>
+                <span :class="`text-xs px-2 py-1 rounded ${task.priority === 'high' ? 'bg-red-100 text-red-800' : task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`">
+                  {{ task.priority }}
+                </span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow">
+          <div class="px-6 py-4 border-b">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Completed Sessions</span>
+              <span class="font-medium text-blue-600">{{ completedSessions.length }}</span>
             </div>
           </div>
         </div>
@@ -324,12 +340,34 @@ const todaysSessions = computed(() => {
   });
 });
 
+// Normalizer to handle different backend property names for "accepted" state
+const getSessionAccepted = (session: Partial<SessionResponse> & {
+  is_counsellor_accepted?: boolean;
+  is_counselor_accepted?: boolean;
+  counsellor_accepted?: boolean;
+  accepted?: boolean;
+}) => {
+  const s = session as {
+    is_counsellor_accepted?: boolean;
+    is_counselor_accepted?: boolean;
+    counsellor_accepted?: boolean;
+    accepted?: boolean;
+  };
+  return Boolean(
+    s.is_counsellor_accepted ??
+    s.is_counselor_accepted ??
+    s.counsellor_accepted ??
+    s.accepted ??
+    false
+  );
+};
+
 const pendingSessions = computed(() => {
-  return sessions.value.filter(session => !session.is_counsellor_accepted);
+  return sessions.value.filter(session => !getSessionAccepted(session));
 });
 
 const acceptedSessions = computed(() => {
-  return sessions.value.filter(session => session.is_counsellor_accepted);
+  return sessions.value.filter(session => getSessionAccepted(session));
 });
 
 const completedSessions = computed(() => {
@@ -339,9 +377,39 @@ const completedSessions = computed(() => {
 const totalSessions = computed(() => sessions.value.length);
 
 const uniquePatients = computed(() => {
-  const patientIds = new Set(sessions.value.map(session => session.user_id));
-  return patientIds.size;
+  const ids = sessions.value
+    .map(session => {
+      // create a local typed shape to avoid `any` while covering common backend variants
+      type SessionLike = Partial<SessionResponse> & {
+        user?: {
+          id?: string | number;
+          user_id?: string | number;
+          userId?: string | number;
+          email?: string;
+        };
+        user_id?: string | number;
+        patient_id?: string | number;
+        userId?: string | number;
+      };
+      const s = session as SessionLike;
+      // prefer nested user id, then common variants, then fallback to null
+      return s.user?.id ?? s.user_id ?? s.user?.user_id ?? s.patient_id ?? s.user?.userId ?? s.user?.email ?? null;
+    })
+    .filter(Boolean);
+  return new Set(ids).size;
 });
+
+// Simple local tasks list (replace with API-backed data if available)
+type Task = {
+  id: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+};
+
+const pendingTasks = ref<Task[]>([
+  { id: 't1', description: 'Complete patient notes', priority: 'high' },
+  { id: 't2', description: 'Upload session resources', priority: 'medium' }
+]);
 
 // Methods
 const getGreeting = () => {
@@ -351,15 +419,40 @@ const getGreeting = () => {
   return 'evening';
 };
 
-const getPatientName = (session: SessionResponse) => {
-  return `${session.user.first_name} ${session.user.last_name}`;
+// Accept a partial session shape from the store/template and use safe accessors.
+type ExtendedSession = Partial<SessionResponse> & {
+  first_name?: string;
+  last_name?: string;
+  title?: string;
+  topic?: string;
+  description?: string;
+  user?: {
+    first_name?: string;
+    last_name?: string;
+  };
 };
 
-const getSessionStatusClass = (isAccepted: boolean) => {
+const getPatientName = (session: ExtendedSession) => {
+  // Some APIs return a nested user object, others might only include first/last on the root;
+  // fall back safely and return a sensible default.
+  const first = session.user?.first_name ?? session.first_name ?? 'Unknown';
+  const last = session.user?.last_name ?? session.last_name ?? '';
+  return `${first} ${last}`.trim();
+};
+
+// Helper to display a session "topic" while supporting different backend shapes.
+// Prefer explicit topic, then title, then description, then an empty placeholder.
+const getSessionTopic = (session: ExtendedSession) => {
+  return session.topic ?? session.title ?? session.description ?? 'No topic provided';
+};
+
+// Allow undefined to be passed and treat it as not accepted.
+const getSessionStatusClass = (isAccepted?: boolean) => {
   return isAccepted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
 };
 
-const canStartSession = (session: SessionResponse) => {
+const canStartSession = (session: Partial<SessionResponse>) => {
+  if (!session.start_time) return false;
   const sessionTime = new Date(session.start_time);
   const now = new Date();
   const timeDiff = sessionTime.getTime() - now.getTime();
@@ -387,7 +480,7 @@ const handleRejectSession = (sessionId: string) => {
   }
 };
 
-const startSession = (session: SessionResponse) => {
+const startSession = (session: Partial<SessionResponse>) => {
   if (session.meeting_link) {
     window.open(session.meeting_link, '_blank');
   } else {
@@ -397,6 +490,7 @@ const startSession = (session: SessionResponse) => {
 };
 
 onMounted(async () => {
+  console.log('Loading counselor dashboard data...');
   try {
     await getProfile().catch(() => console.log('Could not load user profile'));
     await fetchCounsellorSessions().catch(() => console.log('Could not load sessions'));

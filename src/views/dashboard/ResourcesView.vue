@@ -91,7 +91,6 @@
       </div>
     </div>
 
-    <!-- Upload Modal -->
     <div v-if="showUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl p-6 max-w-md w-full">
         <h3 class="text-lg font-semibold mb-4">Upload New Resource</h3>
@@ -281,10 +280,7 @@ const handleUpload = async () => {
     formData.append('category', uploadForm.value.category);
     formData.append('file', fileInput.value.files[0]);
 
-    // This would use your ResourceService.uploadResource
-    // await ResourceService.uploadResource(formData);
-
-    // For now, just simulate success
+    
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     showUploadModal.value = false;

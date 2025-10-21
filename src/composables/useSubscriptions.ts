@@ -1,4 +1,3 @@
-// src/composables/useSubscriptions.ts
 import { ref, computed } from 'vue';
 import { SubscriptionService } from '@/services/apiService';
 import type { SubscriptionPlan } from '@/services/apiService';

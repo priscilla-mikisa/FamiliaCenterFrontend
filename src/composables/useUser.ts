@@ -1,4 +1,3 @@
-// src/composables/useUser.ts
 import { ref } from 'vue';
 import { UserService, type User } from '@/services/apiService';
 
@@ -9,11 +8,11 @@ export const useUser = () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchUser = async (id: string) => { // Changed from number to string
+  const fetchUser = async (id: string) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await UserService.getUser(id); // Fixed method name
+      const response = await UserService.getUser(id);
       user.value = response.data;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch user';
@@ -33,16 +32,16 @@ export const useUser = () => {
 
   const fetchCounselors = async () => {
     try {
-      const response = await UserService.getCounselors(); // Now exists
+      const response = await UserService.getCounselors();
       counselors.value = response.data || [];
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch counselors';
     }
   };
 
-  const updateUser = async (id: string, userData: Partial<User>) => { // Changed from number to string
+  const updateUser = async (id: string, userData: Partial<User>) => {
     try {
-      const response = await UserService.updateUser(id, userData); // Now exists
+      const response = await UserService.updateUser(id, userData);
       user.value = response.data;
       return response;
     } catch (err) {

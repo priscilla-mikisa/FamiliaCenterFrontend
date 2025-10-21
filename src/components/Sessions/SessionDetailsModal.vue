@@ -1,4 +1,3 @@
-<!-- src/components/Sessions/SessionDetailsModal.vue -->
 <template>
   <div v-if="isOpen && session" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
     <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">

@@ -1,4 +1,3 @@
-// src/types/counselor.ts
 export interface CounselorClient {
   id: number;
   name: string;

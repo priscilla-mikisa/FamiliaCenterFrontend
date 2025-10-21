@@ -58,7 +58,6 @@
               </div>
             </div>
 
-            <!-- Progress section for enrolled programs -->
             <div v-if="program.is_enrolled" class="mt-4">
               <div class="flex justify-between text-sm mb-1">
                 <span>Progress</span>

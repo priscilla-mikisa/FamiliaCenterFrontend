@@ -1,11 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 relative">
-    <!-- Close Button -->
     <router-link to="/" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 transition-colors">
       <XIcon class="w-6 h-6 text-gray-600" />
     </router-link>
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-green-600 p-6 text-center relative">
         <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
           <UserIcon class="w-8 h-8 text-white" />
@@ -24,7 +23,6 @@
         </div>
 
         <div class="space-y-4">
-          <!-- Role Selection - First Field -->
           <div>
             <label for="userRole" class="block text-sm font-medium text-gray-700 mb-1">
               I am signing up as a:
@@ -43,7 +41,27 @@
             <p v-if="errors.userRole" class="mt-1 text-sm text-red-600">{{ errors.userRole }}</p>
           </div>
 
-          <!-- First Name and Last Name - Side by Side -->
+          <!-- Salutation - Only for counselors -->
+          <div v-if="formData.userRole === 'counselor'">
+            <label for="salutation" class="block text-sm font-medium text-gray-700 mb-1">
+              Salutation <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="salutation"
+              v-model="formData.salutation"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Select salutation</option>
+              <option value="Dr.">Dr.</option>
+              <option value="Mr.">Mr.</option>
+              <option value="Ms.">Ms.</option>
+              <option value="Mrs.">Mrs.</option>
+              <option value="Prof.">Prof.</option>
+            </select>
+            <p v-if="errors.salutation" class="mt-1 text-sm text-red-600">{{ errors.salutation }}</p>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">
@@ -77,7 +95,6 @@
             </div>
           </div>
 
-          <!-- Email -->
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
               Email Address
@@ -99,7 +116,6 @@
             <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
           </div>
 
-          <!-- Phone Number and Country Code -->
           <div class="grid grid-cols-5 gap-3">
             <div class="col-span-2">
               <label for="countryCode" class="block text-sm font-medium text-gray-700 mb-1">
@@ -142,7 +158,6 @@
             </div>
           </div>
 
-          <!-- Specialization field - only for counselors -->
           <div v-if="formData.userRole === 'counselor'">
             <label for="specialization" class="block text-sm font-medium text-gray-700 mb-1">
               Specialization
@@ -167,7 +182,78 @@
             <p v-if="errors.specialization" class="mt-1 text-sm text-red-600">{{ errors.specialization }}</p>
           </div>
 
-          <!-- Account Type - only for patients -->
+          <!-- Bio - Only for counselors -->
+          <div v-if="formData.userRole === 'counselor'">
+            <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">
+              Professional Bio <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              id="bio"
+              v-model="formData.bio"
+              rows="4"
+              required
+              placeholder="Tell us about your background, experience, and approach to counseling..."
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-1">Minimum 50 characters</p>
+            <p v-if="errors.bio" class="mt-1 text-sm text-red-600">{{ errors.bio }}</p>
+          </div>
+
+          <div v-if="formData.userRole === 'counselor'" class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Required Documents</h3>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Selfie Photo <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                @change="(e) => handleFileUpload(e, 'selfie')"
+                required
+                class="w-full p-2 border border-gray-300 rounded"
+              />
+              <div v-if="formData.selfiePhoto" class="text-sm text-green-600 mt-1">
+                ✓ {{ formData.selfiePhoto.name }}
+              </div>
+              <p v-if="errors.selfiePhoto" class="mt-1 text-sm text-red-600">{{ errors.selfiePhoto }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ID Document (Front) <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                @change="(e) => handleFileUpload(e, 'documentFront')"
+                required
+                class="w-full p-2 border border-gray-300 rounded"
+              />
+              <div v-if="formData.documentFrontPhoto" class="text-sm text-green-600 mt-1">
+                ✓ {{ formData.documentFrontPhoto.name }}
+              </div>
+              <p v-if="errors.documentFrontPhoto" class="mt-1 text-sm text-red-600">{{ errors.documentFrontPhoto }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ID Document (Back) <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                @change="(e) => handleFileUpload(e, 'documentBack')"
+                required
+                class="w-full p-2 border border-gray-300 rounded"
+              />
+              <div v-if="formData.documentBackPhoto" class="text-sm text-green-600 mt-1">
+                ✓ {{ formData.documentBackPhoto.name }}
+              </div>
+              <p v-if="errors.documentBackPhoto" class="mt-1 text-sm text-red-600">{{ errors.documentBackPhoto }}</p>
+            </div>
+          </div>
+
           <div v-if="formData.userRole === 'patient'">
             <label for="account_type" class="block text-sm font-medium text-gray-700 mb-1">
               Account Type
@@ -185,7 +271,6 @@
             </select>
           </div>
 
-          <!-- Password -->
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -207,7 +292,6 @@
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
           </div>
 
-          <!-- Confirm Password -->
           <div>
             <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
@@ -229,7 +313,6 @@
             <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
           </div>
 
-          <!-- Terms Agreement -->
           <div class="flex items-start">
             <div class="flex items-center h-5">
               <input
@@ -298,6 +381,7 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
 import { useValidation } from '@/composables/useValidation';
+import axios from 'axios';
 import {
   XIcon,
   UserIcon,
@@ -319,52 +403,143 @@ const formData = reactive({
   confirmPassword: '',
   phone_number: '',
   country_code: '',
-  userRole: '', // 'patient' or 'counselor'
-  account_type: 'individual', // for patients
-  specialization: '', // for counselors
+  userRole: '',
+  account_type: 'individual',
+  specialization: '',
+  salutation: '',
+  bio: '',
+  selfiePhoto: null as File | null,
+  documentFrontPhoto: null as File | null,
+  documentBackPhoto: null as File | null,
   agreeToTerms: false
 });
 
 const successMessage = ref('');
 
+const handleFileUpload = (event: Event, type: string) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      errors.value[`${type}Photo`] = 'File size must be less than 5MB';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      errors.value[`${type}Photo`] = 'Please upload a valid image file';
+      return;
+    }
+
+    delete errors.value[`${type}Photo`];
+
+    if (type === 'selfie') {
+      formData.selfiePhoto = file;
+    } else if (type === 'documentFront') {
+      formData.documentFrontPhoto = file;
+    } else if (type === 'documentBack') {
+      formData.documentBackPhoto = file;
+    }
+  }
+};
+
 const handleSubmit = async () => {
   console.log('Form submission started');
 
-  // Clear previous errors
   Object.keys(errors.value).forEach(key => {
     delete errors.value[key];
   });
 
-  // Validate form using the fixed validation function
+  if (formData.userRole === 'counselor') {
+    if (!formData.salutation) {
+      errors.value.salutation = 'Salutation is required for counselors';
+    }
+    if (!formData.bio || formData.bio.length < 50) {
+      errors.value.bio = 'Bio is required and must be at least 50 characters';
+    }
+    if (!formData.selfiePhoto) {
+      errors.value.selfiePhoto = 'Selfie photo is required for counselors';
+    }
+    if (!formData.documentFrontPhoto) {
+      errors.value.documentFrontPhoto = 'Front ID photo is required for counselors';
+    }
+    if (!formData.documentBackPhoto) {
+      errors.value.documentBackPhoto = 'Back ID photo is required for counselors';
+    }
+  }
+
   if (!validateSignUpForm(formData)) {
     console.log('Validation failed:', errors.value);
+    return;
+  }
+
+  if (Object.keys(errors.value).length > 0) {
+    console.log('Additional validation failed:', errors.value);
     return;
   }
 
   console.log('Validation passed, calling API...');
 
   try {
-    const userData = {
-      name: `${formData.first_name} ${formData.last_name}`,
-      first_name: formData.first_name,
-      last_name: formData.last_name,
-      email: formData.email,
-      password: formData.password,
-      confirmPassword: formData.confirmPassword,
-      phone_number: formData.phone_number,
-      country_code: formData.country_code,
-      userRole: formData.userRole as 'patient' | 'counselor',
-      account_type: formData.account_type,
-      specialization: formData.specialization,
-    };
+    if (formData.userRole === 'counselor') {
+      const toBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
+        });
+      };
 
-    console.log('Calling signUp with userData:', userData);
-    const response = await signUp(userData);
-    console.log('Registration successful:', response);
+      const selfieBase64 = await toBase64(formData.selfiePhoto!);
+      const frontBase64 = await toBase64(formData.documentFrontPhoto!);
+      const backBase64 = await toBase64(formData.documentBackPhoto!);
+
+      const counselorData = {
+        salutation: formData.salutation,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        phone_number: formData.phone_number,
+        country_code: formData.country_code,
+        speciality: formData.specialization,
+        bio: formData.bio,
+        selfie_photo: selfieBase64,
+        id_front_photo: frontBase64,
+        id_back_photo: backBase64
+      };
+
+      console.log('Submitting counselor registration with correct field names...');
+
+      const response = await axios.post('https://backend.fami.space/api/v1/counsellor/register', counselorData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('Counselor registration successful:', response.data);
+    } else {
+      const userData = {
+        name: `${formData.first_name} ${formData.last_name}`,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        phone_number: formData.phone_number,
+        country_code: formData.country_code,
+        userRole: formData.userRole as 'patient' | 'counselor',
+        account_type: formData.account_type,
+        specialization: formData.specialization,
+      };
+
+      console.log('Calling signUp with userData (ORIGINAL WAY):', userData);
+      const response = await signUp(userData);
+      console.log('Patient registration successful:', response);
+    }
 
     successMessage.value = 'Account created successfully! Redirecting...';
 
-    // Redirect based on role
     setTimeout(() => {
       if (formData.userRole === 'counselor') {
         router.push('/counselor-dashboard');

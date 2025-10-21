@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <h2 class="text-xl font-semibold text-gray-900">Program Management</h2>
@@ -14,7 +13,6 @@
       </div>
     </div>
 
-    <!-- Programs Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div
         v-for="program in programs"
@@ -51,7 +49,6 @@
             </div>
           </div>
 
-          <!-- Progress Bar -->
           <div class="mb-4">
             <div class="flex justify-between text-sm text-gray-600 mb-1">
               <span>Program Progress</span>
@@ -65,7 +62,6 @@
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="flex space-x-2">
             <button
               @click="viewProgram(program)"
@@ -87,7 +83,6 @@
       </div>
     </div>
 
-    <!-- Program Details Modal -->
     <div v-if="selectedProgram" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b">
@@ -100,7 +95,6 @@
         </div>
 
         <div class="p-6">
-          <!-- Program Tabs -->
           <div class="border-b border-gray-200 mb-6">
             <nav class="-mb-px flex space-x-8">
               <button
@@ -118,7 +112,6 @@
             </nav>
           </div>
 
-          <!-- Overview Tab -->
           <div v-if="activeTab === 'overview'" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div class="bg-gray-50 rounded-lg p-4">
@@ -151,7 +144,6 @@
             </div>
           </div>
 
-          <!-- Sessions Tab -->
           <div v-if="activeTab === 'sessions'" class="space-y-4">
             <div class="flex justify-between items-center">
               <h4 class="font-medium text-gray-900">Session Schedule</h4>
@@ -182,7 +174,6 @@
             </div>
           </div>
 
-          <!-- Resources Tab -->
           <div v-if="activeTab === 'resources'" class="space-y-4">
             <div class="flex justify-between items-center">
               <h4 class="font-medium text-gray-900">Program Resources</h4>
@@ -230,7 +221,6 @@
       </div>
     </div>
 
-    <!-- Create Program Modal -->
     <div v-if="showCreateProgram" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl max-w-2xl w-full">
         <div class="p-6 border-b">
@@ -350,7 +340,6 @@ const programTabs = [
   { id: 'resources', label: 'Resources' }
 ];
 
-// Mock program data
 const programs = ref([
   {
     id: 1,
@@ -427,7 +416,6 @@ const getSessionStatusClass = (status: string) => {
   return classes[status as keyof typeof classes] || classes.scheduled;
 };
 
-// Define a Program interface for type safety
 interface Program {
   id: number;
   title: string;
@@ -472,7 +460,6 @@ const viewParticipants = (program: Program) => {
 const createProgram = () => {
   console.log('Creating program:', newProgram.value);
   showCreateProgram.value = false;
-  // Reset form
   newProgram.value = {
     title: '',
     description: '',

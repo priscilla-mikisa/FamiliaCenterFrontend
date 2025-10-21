@@ -24,7 +24,6 @@ export const useResources = () => {
       const blob = await ResourceService.downloadResource(id);
       const resource = resources.value.find(r => r.id === id);
 
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
