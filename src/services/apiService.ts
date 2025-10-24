@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import type { Forum } from '@/types';
 
 export interface UserRegisterRequest {
   first_name: string;
@@ -356,6 +357,74 @@ export const SubscriptionService = {
         return { subscription: JSON.parse(subStr) };
       }
       return null;
+    }
+  }
+};
+
+export const ForumService = {
+  async getLatestForums(limit: number = 2) {
+    try {
+      const response = await apiClient.get(`/forums/latest?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching latest forums:', error);
+      throw error;
+    }
+  },
+
+  async getForumById(id: string) {
+    try {
+      const response = await apiClient.get(`/forums/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching forum:', error);
+      throw error;
+    }
+  },
+
+  // Admin endpoints
+  async getAllForums(params: { page?: number; limit?: number; status?: string } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.status) queryParams.append('status', params.status);
+      
+      const response = await apiClient.get(`/admin/forums?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all forums:', error);
+      throw error;
+    }
+  },
+
+  async createForum(forumData: Partial<Forum>) {
+    try {
+      const response = await apiClient.post('/admin/forums', forumData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating forum:', error);
+      throw error;
+    }
+  },
+
+  async updateForum(id: string, forumData: Partial<Forum>) {
+    try {
+      const response = await apiClient.put(`/admin/forums/${id}`, forumData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating forum:', error);
+      throw error;
+    }
+  },
+
+  async deleteForum(id: string) {
+    try {
+      const response = await apiClient.delete(`/admin/forums/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting forum:', error);
+      throw error;
     }
   }
 };

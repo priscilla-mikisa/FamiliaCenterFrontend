@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import SignUpView from '@/views/SignUpView.vue';
+import ForumDetailsView from '@/views/ForumDetailsView.vue';
 
 import DashBoardLayout from '@/components/DashBoard/DashBoardLayout.vue';
 import DashboardOverview from '@/views/dashboard/DashboardOverview.vue';
@@ -20,6 +21,11 @@ import CounselorSessions from '@/views/counselor/CounselorSessions.vue';
 import CounselorPrograms from '@/views/counselor/CounselorPrograms.vue';
 import CounselorResources from '@/views/counselor/CounselorResources.vue';
 import CounselorSettings from '@/views/counselor/CounselorSettings.vue';
+
+import AdminDashboardLayout from '@/components/Admin/AdminDashboardLayout.vue';
+import AdminOverview from '@/views/admin/AdminOverview.vue';
+import ForumManagement from '@/views/admin/ForumManagement.vue';
+import ForumForm from '@/components/Admin/ForumForm.vue';
 
 const isAuthenticated = (): boolean => {
   return !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
@@ -49,6 +55,13 @@ const router = createRouter({
       name: 'signup',
       component: SignUpView,
       meta: { requiresGuest: true }
+    },
+    {
+      path: '/forums/:id',
+      name: 'forum-details',
+      component: ForumDetailsView,
+      meta: { requiresGuest: true },
+      props: true
     },
 
     {
@@ -134,6 +147,40 @@ const router = createRouter({
           path: 'settings',
           name: 'counselor-settings',
           component: CounselorSettings
+        }
+      ]
+    },
+
+    {
+      path: '/admin-dashboard',
+      component: AdminDashboardLayout,
+      meta: { requiresAuth: true, allowedUserTypes: ['admin'] },
+      children: [
+        {
+          path: '',
+          name: 'admin-overview',
+          component: AdminOverview
+        },
+        {
+          path: 'forums',
+          name: 'admin-forums',
+          component: ForumManagement
+        },
+        {
+          path: 'forums/create',
+          name: 'admin-create-forum',
+          component: ForumForm
+        },
+        {
+          path: 'forums/:id/edit',
+          name: 'admin-edit-forum',
+          component: ForumForm,
+          props: true
+        },
+        {
+          path: 'settings',
+          name: 'admin-settings',
+          component: () => import('@/views/admin/AdminSettings.vue')
         }
       ]
     },

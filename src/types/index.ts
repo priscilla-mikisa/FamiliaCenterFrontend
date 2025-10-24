@@ -76,3 +76,60 @@ export interface RecordedSession {
   duration: string;
   size: string;
 }
+
+export interface Forum {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  color: string;
+  date: string;
+  time: string;
+  duration: string;
+  capacity: number;
+  location: string;
+  format: string;
+  topics: string[];
+  about: string;
+  about2: string;
+  learning_points: string[];
+  related_events: RelatedEvent[] | null;
+  isRegistered?: boolean;
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RelatedEvent {
+  id: string;
+  title: string;
+  date: string;
+}
+
+export interface ForumListResponse {
+  success: boolean;
+  data: Forum[];
+}
+
+export interface ForumLatestResponse {
+  success: boolean;
+  data: Forum[];
+}
+
+export interface ForumResponse {
+  success: boolean;
+  data: Forum;
+}
+
+export interface ForumListPaginatedResponse {
+  success: boolean;
+  data: {
+    forums: Forum[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
