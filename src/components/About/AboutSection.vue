@@ -1,7 +1,7 @@
 <template>
-  <section id="about" class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
+  <section id="about" class="py-200 bg-gray-50">
+    <div class="ml-10 mr-10 mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-20">
         <div>
           <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-6">
             Our Approach
@@ -10,7 +10,7 @@
             Helping Families Thrive Through Faith-Based Support
           </h2>
           <p class="text-lg text-gray-600 mb-8">
-            Familia Center combines professional guidance with spiritual wisdom to strengthen families at every stage.
+            Fami Space combines professional guidance with spiritual wisdom to strengthen families at every stage.
           </p>
 
           <div class="space-y-6">

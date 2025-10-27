@@ -1,6 +1,6 @@
 <template>
   <section id="programs" class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="ml-10 mr-10 mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-16">
         <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
           Our Family Enrichment Programs
@@ -66,7 +66,7 @@
       </div>
 
       <div class="text-center mt-8">
-        <router-link to="/login">
+        <router-link to="https://fami.space/programs">
           <button class="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 font-medium">
             View All Programs
           </button>

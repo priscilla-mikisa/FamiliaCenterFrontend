@@ -1,6 +1,7 @@
+/src/components/Footer/FooterSection.vue
 <template>
-  <footer class="bg-gray-900 text-white py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <footer id="footer" class="bg-gray-900 text-white py-12">
+    <div class="ml-10 mr-10 mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid md:grid-cols-4 gap-8">
         <div>
           <div class="flex items-center space-x-2 mb-4">
@@ -21,8 +22,8 @@
         <div>
           <h3 class="font-semibold mb-4">Platform</h3>
           <ul class="space-y-2 text-gray-400">
-            <li v-for="(link, index) in platformLinks" :key="index">
-              <a href="#" class="hover:text-white">{{ link }}</a>
+            <li v-for="(link, index) in platformLink" :key="index">
+              <a :href="link.url" class="hover:text-white">{{ link.name }}</a>
             </li>
           </ul>
         </div>
@@ -31,7 +32,7 @@
           <h3 class="font-semibold mb-4">Company</h3>
           <ul class="space-y-2 text-gray-400">
             <li v-for="(link, index) in companyLinks" :key="index">
-              <a href="#" class="hover:text-white">{{ link }}</a>
+              <a :href="link.url" class="hover:text-white">{{ link.name }}</a>
             </li>
           </ul>
         </div>
@@ -39,7 +40,7 @@
         <div>
           <h3 class="font-semibold mb-4">Contact</h3>
           <ul class="space-y-2 text-gray-400">
-            <li>support@familiacenter.com</li>
+            <li>info@fami.space</li>
             <li>+254 754235890</li>
             <li>24/7 Support Available</li>
           </ul>
@@ -54,17 +55,23 @@
 </template>
 
 <script setup lang="ts">
-const platformLinks = [
-  "Live Sessions",
-  "Programs",
-  "Resources",
-  "Support"
+const platformLink = [
+  {  name: "Programs",
+    url: "#programs"
+  },
+  {
+    name: "Resources",
+    url: "#resources"
+  },
+  {
+    name: "Support",
+    url: "#support"
+  }
 ];
 
+
 const companyLinks = [
-  "About Us",
-  "Counselors",
-  "Privacy Policy",
-  "Terms of Service"
-];
+  { name: "About Us", url: "#about" },
+  { name: "Counselors", url: "#counselors" },
+  { name: "Privacy Policy", url: "/privacy-policy" }, { name: "Terms of Service", url: "/terms-of-use" } ];
 </script>

@@ -1,7 +1,7 @@
-<template>
+ <template>
   <section id="home" class="pt-24 pb-16 bg-gradient-to-br from-green-50 to-blue-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
+    <div class="ml-10 mr-10 mt-11 py-11 mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         <div>
           <div class="inline-flex items-center space-x-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-6">
             <AwardIcon class="w-4 h-4" />
@@ -27,7 +27,7 @@
                 <PlayIcon class="w-5 h-5" />
                 <span>How It Works</span>
               </button>
-            </router-link>  
+            </router-link>
           </div>
 
           <div class="flex items-center space-x-4">
@@ -45,6 +45,7 @@
         </div>
 
         <div class="relative">
+
           <div class="bg-white rounded-2xl shadow-2xl p-8 transform hover:scale-[1.02] transition-transform duration-300">
             <div class="flex items-center space-x-3 mb-6">
               <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -89,3 +90,4 @@ const helpItems = [
   }
 ];
 </script>
+

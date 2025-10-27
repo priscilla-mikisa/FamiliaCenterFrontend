@@ -4,6 +4,8 @@ import LoginView from '@/views/LoginView.vue';
 import SignUpView from '@/views/SignUpView.vue';
 import ForumDetailsView from '@/views/ForumDetailsView.vue';
 
+import TermsOfUse from '@/components/TermsOfUse.vue';
+import PrivacyPolicy from '@/components/PrivacyPolicy.vue';
 import DashBoardLayout from '@/components/DashBoard/DashBoardLayout.vue';
 import DashboardOverview from '@/views/dashboard/DashboardOverview.vue';
 import ProgramsView from '@/views/dashboard/ProgramsView.vue';
@@ -147,7 +149,17 @@ const router = createRouter({
           path: 'settings',
           name: 'counselor-settings',
           component: CounselorSettings
-        }
+        },
+        {
+      path: '/terms-of-use',
+      name: 'terms-of-use',
+      component: TermsOfUse,
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: PrivacyPolicy,
+    },
       ]
     },
 
