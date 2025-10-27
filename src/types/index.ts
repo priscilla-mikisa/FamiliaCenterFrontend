@@ -96,6 +96,7 @@ export interface Forum {
   related_events: RelatedEvent[] | null;
   isRegistered?: boolean;
   isPublic?: boolean;
+  registeredCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
