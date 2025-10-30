@@ -15,3 +15,5 @@
 <script setup lang="ts">
 // Admin settings functionality will be implemented here
 </script>
+
+

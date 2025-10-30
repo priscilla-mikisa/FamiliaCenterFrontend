@@ -35,7 +35,21 @@ interface ApiResponse {
 
 const toUserData = (data: unknown): UserData => {
   if (typeof data === 'object' && data !== null) {
-    return data as UserData;
+    const responseData = data as any;
+    // Extract user fields from the API response
+    const userData: UserData = {
+      id: responseData.user_id || responseData.counsellor_id || responseData.id,
+      first_name: responseData.first_name || '',
+      last_name: responseData.last_name || '',
+      email: responseData.email || '',
+      phone_number: responseData.phone_number || '',
+      country_code: responseData.country_code || '',
+      speciality: responseData.speciality || '',
+      bio: responseData.bio || '',
+      profile_picture: responseData.profile_picture || '',
+      salutation: responseData.salutation || ''
+    };
+    return userData;
   }
   return {};
 };
@@ -133,9 +147,18 @@ export const useAuth = () => {
       const response: ApiResponse = await apiClient.post(endpoint, payload);
 
       if (response.data.token) {
-        const userInfo = toUserData(response.data.user || response.data.counsellor);
+        // Extract user data from the response - for counselors, it might be nested under counsellor
+        let userInfo: UserData;
+        if (userType === 'counselor' && response.data.counsellor) {
+          userInfo = toUserData(response.data.counsellor);
+        } else if (response.data.user) {
+          userInfo = toUserData(response.data.user);
+        } else {
+          userInfo = toUserData(response.data);
+        }
+        
         const actualUserType = userType === 'counselor' ? 'counsellor' : 'user';
-
+        
         TokenManager.storeToken(
           response.data.token,
           userInfo,
@@ -170,42 +193,88 @@ export const useAuth = () => {
   const logout = async () => {
     isLoading.value = true;
     try {
-      await apiClient.post('/auth/logout').catch(() => {
-        console.log('Logout API call failed, but continuing...');
-      });
-    } catch (err) {
-      console.error('Logout API error:', err);
-    } finally {
+      // Clear tokens and user data (client-side logout)
       TokenManager.clearTokens();
       user.value = null;
       success.value = 'Logged out successfully!';
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
       isLoading.value = false;
     }
   };
 
   const getProfile = async () => {
     try {
+      // Determine which endpoint to use based on user type
+      const userType = getUserType();
+      let endpoint: string;
+      
+      if (userType === 'counsellor') {
+        endpoint = '/counsellor/profile';
+      } else {
+        endpoint = '/users/profile';
+      }
+      
+      // Call the API endpoint to get profile
+      const response = await apiClient.get(endpoint);
+      
+      if (response.data?.data || response.data) {
+        const userData = toUserData(response.data.data || response.data);
+        localStorage.setItem('user', JSON.stringify(userData));
+        user.value = userData as UserData;
+        return { data: userData };
+      }
+      
+      // Fallback to localStorage if API fails
       const userDataStr = localStorage.getItem('user');
       if (userDataStr) {
         const userData: UserData = JSON.parse(userDataStr);
         user.value = userData;
         return { data: userData };
-      } else {
-        throw new Error('No user profile found. Please login again.');
       }
+      
+      throw new Error('No user profile found. Please login again.');
     } catch (err) {
       console.error('Failed to get profile:', err);
+      // Fallback to localStorage on error
+      const userDataStr = localStorage.getItem('user');
+      if (userDataStr) {
+        const userData: UserData = JSON.parse(userDataStr);
+        user.value = userData;
+        return { data: userData };
+      }
       throw err;
     }
   };
 
-  const updateProfile = async (userData: UserData) => {
+  const updateProfile = async (userData: Partial<UserData>) => {
     try {
-      const currentUser: UserData = JSON.parse(localStorage.getItem('user') || '{}');
-      const updatedUser = { ...currentUser, ...userData };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      user.value = updatedUser;
-      return { data: updatedUser };
+      // Determine which endpoint to use based on user type
+      const userType = getUserType();
+      let endpoint: string;
+      
+      if (userType === 'counsellor') {
+        endpoint = '/counsellor/profile';
+      } else {
+        endpoint = '/users/profile';
+      }
+      
+      // Call the API endpoint to update profile
+      const response = await apiClient.put(endpoint, userData);
+      
+      // Update local storage and state with the response
+      if (response.data?.data || response.data) {
+        const updatedUser = toUserData(response.data.data || response.data);
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const mergedUser = { ...currentUser, ...updatedUser };
+        
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+        user.value = mergedUser as UserData;
+        return { data: mergedUser };
+      }
+      
+      return response.data;
     } catch (err) {
       console.error('Failed to update profile:', err);
       throw err;

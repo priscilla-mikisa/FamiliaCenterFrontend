@@ -103,28 +103,32 @@
                     </div>
                     
                   </div>
-                  <div class="flex items-center space-x-2 ml-4">
-                    <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSessionStatusClass(getSessionAccepted(session))}`">
+                  <div class="flex items-center space-x-3 ml-4">
+                    <span :class="`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${getSessionStatusClass(getSessionAccepted(session))}`">
                       {{ getSessionAccepted(session) ? 'Accepted' : 'Pending' }}
                     </span>
-                    <div class="flex flex-col space-y-1">
+                    <div class="flex items-center space-x-2">
+                      <button
+                        v-if="getSessionAccepted(session)"
+                        @click="viewSessionDetails(session)"
+                        class="px-4 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        View Details
+                      </button>
+                      <button
+                        v-if="getSessionAccepted(session) && session.meeting_link"
+                        @click="startSession(session)"
+                        class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 whitespace-nowrap"
+                      >
+                        {{ canStartSession(session) ? 'Start Session' : 'Join Meeting' }}
+                      </button>
                       <button
                         v-if="!getSessionAccepted(session)"
                         @click="handleAcceptSession(session.id)"
                         :disabled="acceptingSession === session.id"
-                        class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                        class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
                       >
                         {{ acceptingSession === session.id ? 'Accepting...' : 'Accept' }}
-                      </button>
-                      <button
-                        v-if="canStartSession(session) && getSessionAccepted(session)"
-                        @click="startSession(session)"
-                        class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                      >
-                        Start Session
-                      </button>
-                      <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50">
-                        View Details
                       </button>
                     </div>
                   </div>
@@ -158,13 +162,37 @@
                 :key="session.id"
                 class="flex items-center justify-between p-3 border border-gray-100 rounded-lg"
               >
-                <div>
+                <div class="flex-1">
                   <div class="font-medium text-sm">{{ getPatientName(session) }}</div>
                   <div class="text-xs text-gray-500">{{ getSessionTopic(session) }} • {{ formatSessionTime(session.session_date, session.session_time) }}</div>
                 </div>
-                <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(getSessionAccepted(session))}`">
-                  {{ getSessionAccepted(session) ? 'Accepted' : 'Pending' }}
-                </span>
+                <div class="flex items-center space-x-2 ml-3">
+                  <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(getSessionAccepted(session))}`">
+                    {{ getSessionAccepted(session) ? 'Accepted' : 'Pending' }}
+                  </span>
+                  <button
+                    v-if="getSessionAccepted(session)"
+                    @click="viewSessionDetails(session)"
+                    class="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    Details
+                  </button>
+                  <button
+                    v-if="getSessionAccepted(session) && session.meeting_link"
+                    @click="startSession(session)"
+                    class="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Join
+                  </button>
+                  <button
+                    v-if="!getSessionAccepted(session)"
+                    @click="handleAcceptSession(session.id)"
+                    :disabled="acceptingSession === session.id"
+                    class="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                  >
+                    Accept
+                  </button>
+                </div>
               </div>
             </div>
             <div v-else class="text-center py-4 text-gray-500 text-sm">
@@ -298,6 +326,74 @@
         </div>
       </div>
     </div>
+
+    <!-- Session Details Modal -->
+    <div v-if="showSessionDetails && selectedSession" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="p-6 border-b">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Session Details</h3>
+            <button @click="closeSessionDetails" class="p-1 hover:bg-gray-100 rounded">
+              <XIcon class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">Patient:</span>
+              <span class="font-medium ml-2">{{ getPatientName(selectedSession) }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Status:</span>
+              <span :class="`ml-2 px-2 py-1 rounded text-xs ${getSessionStatusClass(getSessionAccepted(selectedSession))}`">
+                {{ getSessionAccepted(selectedSession) ? 'Accepted' : 'Pending' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-gray-500">Date & Time:</span>
+              <span class="font-medium ml-2">{{ formatSessionTime((selectedSession as any).session_date || '', (selectedSession as any).session_time || '') }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Duration:</span>
+              <span class="font-medium ml-2">{{ selectedSession.duration || 60 }} minutes</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-gray-500">Topic:</span>
+              <span class="font-medium ml-2">{{ getSessionTopic(selectedSession) }}</span>
+            </div>
+            <div v-if="(selectedSession as any).notes" class="col-span-2">
+              <span class="text-gray-500">Notes:</span>
+              <p class="text-gray-700 bg-gray-50 p-3 rounded-lg mt-2">{{ (selectedSession as any).notes }}</p>
+            </div>
+          </div>
+          <div v-if="selectedSession.meeting_link" class="border-t pt-4">
+            <button
+              @click="openJitsiRoom(selectedSession)"
+              class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center space-x-2"
+            >
+              <VideoIcon class="w-5 h-5" />
+              <span>Join Video Session</span>
+            </button>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button @click="closeSessionDetails" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jitsi Meeting Room -->
+    <JitsiMeetingRoom
+      v-if="showJitsiRoom && selectedSession && selectedSession.meeting_link"
+      :meeting-link="selectedSession.meeting_link"
+      :session-title="getSessionTopic(selectedSession)"
+      :session-details="`${getPatientName(selectedSession)} - ${formatSessionTime((selectedSession as any).session_date || '', (selectedSession as any).session_time || '')}`"
+      :user-name="user?.first_name || 'Counselor'"
+      @close="closeJitsiRoom"
+    />
   </div>
 </template>
 
@@ -310,11 +406,13 @@ import {
   BookOpenIcon,
   ClockIcon,
   FileTextIcon,
-  SettingsIcon
+  SettingsIcon,
+  XIcon
 } from 'lucide-vue-next';
 import { useSessions } from '@/composables/useSessions';
 import { useAuth } from '@/composables/useAuth';
 import type { SessionResponse } from '@/services/apiService';
+import JitsiMeetingRoom from '@/components/Sessions/JitsiMeetingRoom.vue';
 
 const {
   sessions,
@@ -327,6 +425,9 @@ const {
 const { user, getProfile } = useAuth();
 
 const acceptingSession = ref<string | null>(null);
+const selectedSession = ref<Partial<SessionResponse> | null>(null);
+const showSessionDetails = ref(false);
+const showJitsiRoom = ref(false);
 
 // Computed properties based on actual backend data
 const todaysSessions = computed(() => {
@@ -343,7 +444,14 @@ const getSessionAccepted = (session: Partial<SessionResponse> & {
   is_counselor_accepted?: boolean;
   counsellor_accepted?: boolean;
   accepted?: boolean;
+  status?: string;
 }) => {
+  // Check status first (backend uses "confirmed" when counselor accepts)
+  if (session.status === 'confirmed' || session.status === 'accepted') {
+    return true;
+  }
+  
+  // Fallback to boolean flags
   const s = session as {
     is_counsellor_accepted?: boolean;
     is_counselor_accepted?: boolean;
@@ -422,17 +530,40 @@ type ExtendedSession = Partial<SessionResponse> & {
   topic?: string;
   description?: string;
   user?: {
+    id?: string;
     first_name?: string;
     last_name?: string;
+    email?: string;
   };
+  user_name?: string;
+  patient_name?: string;
 };
 
 const getPatientName = (session: ExtendedSession) => {
-  // Some APIs return a nested user object, others might only include first/last on the root;
-  // fall back safely and return a sensible default.
-  const first = session.user?.first_name ?? session.first_name ?? 'Unknown';
-  const last = session.user?.last_name ?? session.last_name ?? '';
-  return `${first} ${last}`.trim();
+  // Check session.user object first (this is the backend structure)
+  if (session.user) {
+    const first = session.user.first_name || '';
+    const last = session.user.last_name || '';
+    if (first || last) {
+      return `${first} ${last}`.trim();
+    }
+    // If no name but has email, use email
+    if (session.user.email) {
+      return session.user.email;
+    }
+  }
+  
+  // Fallback to other possible fields
+  if (session.user_name) return session.user_name;
+  if (session.patient_name) return session.patient_name;
+  
+  const first = session.first_name || '';
+  const last = session.last_name || '';
+  if (first || last) {
+    return `${first} ${last}`.trim();
+  }
+  
+  return 'Unknown Patient';
 };
 
 // Helper to display a session "topic" while supporting different backend shapes.
@@ -475,12 +606,33 @@ const handleRejectSession = (sessionId: string) => {
   }
 };
 
+const viewSessionDetails = (session: Partial<SessionResponse>) => {
+  selectedSession.value = session;
+  showSessionDetails.value = true;
+};
+
+const closeSessionDetails = () => {
+  showSessionDetails.value = false;
+  selectedSession.value = null;
+};
+
+const openJitsiRoom = (session: Partial<SessionResponse>) => {
+  selectedSession.value = session;
+  showJitsiRoom.value = true;
+};
+
+const closeJitsiRoom = () => {
+  showJitsiRoom.value = false;
+  selectedSession.value = null;
+};
+
 const startSession = (session: Partial<SessionResponse>) => {
   if (session.meeting_link) {
-    window.open(session.meeting_link, '_blank');
+    // Open Jitsi meeting room modal
+    openJitsiRoom(session);
   } else {
-    console.log('Starting session:', session);
-    alert(`Starting session with ${getPatientName(session)}`);
+    console.log('No meeting link for session:', session);
+    alert(`Meeting link not available yet. Please contact the patient to set up the meeting.`);
   }
 };
 

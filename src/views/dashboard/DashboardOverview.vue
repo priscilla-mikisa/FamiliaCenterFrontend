@@ -31,8 +31,11 @@
       <div class="flex items-center justify-between">
         <div>
           <h3 class="font-medium text-blue-900">{{ currentSubscription.plan_name }}</h3>
-          <p class="text-blue-700 text-sm">
-            Next billing: {{ formatDate(currentSubscription.next_billing_date || '') }}
+          <p v-if="currentSubscription.next_billing_date" class="text-blue-700 text-sm">
+            Next billing: {{ formatDate(currentSubscription.next_billing_date) }}
+          </p>
+          <p v-else class="text-blue-700 text-sm">
+            Active subscription
           </p>
         </div>
         <router-link
@@ -107,7 +110,7 @@
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
               <button
-                @click="showBookingModal = true"
+                @click="openBookingModal"
                 class="text-green-600 hover:text-green-800 text-sm font-medium"
               >
                 Book New Session
@@ -155,6 +158,15 @@
                     >
                       Join Session
                     </button>
+                    <div
+                      v-else-if="session.status === 'scheduled' || session.status === 'pending'"
+                      class="px-4 py-2 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg flex items-center space-x-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <span>Awaiting approval</span>
+                    </div>
                     <router-link
                       v-else
                       :to="`/dashboard/sessions/join/${session.id}`"
@@ -172,7 +184,7 @@
               </div>
               <p class="text-gray-600 mb-4">No upcoming sessions scheduled</p>
               <button
-                @click="showBookingModal = true"
+                @click="openBookingModal"
                 class="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
               >
                 Book Your First Session
@@ -262,7 +274,8 @@
     <!-- Book Session Modal -->
     <BookSessionModal
       :isOpen="showBookingModal"
-      @close="showBookingModal = false"
+      :counselor="selectedCounselor"
+      @close="showBookingModal = false; selectedCounselor = null"
       @success="handleBookingSuccess"
     />
   </div>
@@ -283,9 +296,11 @@ import {
   CreditCardIcon
 } from 'lucide-vue-next';
 import { useSessions } from '@/composables/useSessions';
+import BookSessionModal from '@/components/Sessions/BookSessionModal.vue';
 import { usePrograms } from '@/composables/usePrograms';
 import { useSubscriptions } from '@/composables/useSubscriptions';
 import { useAuth } from '@/composables/useAuth';
+import apiClient from '@/services/apiClient';
 
 // Define proper interfaces for type safety
 interface SessionData {
@@ -318,16 +333,13 @@ interface UserProfile {
 
 // Get composables - use proper destructuring with fallbacks for missing properties
 const sessionsComposable = useSessions();
-const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, getSessionStatusText, getSessionStatusClass, formatSessionTime } = sessionsComposable;
+const { upcomingSessions, counsellors, loading: sessionsLoading, fetchSessions, fetchCounselors, getSessionStatusText, getSessionStatusClass, formatSessionTime } = sessionsComposable;
 
 // Expose a template-friendly loading ref (template uses `loading`)
 const loading = sessionsLoading;
 
 // Provide a pastSessions ref (use composable's pastSessions if available, otherwise fallback to an empty ref)
 const pastSessions = (sessionsComposable as { pastSessions?: Ref<SessionData[]> }).pastSessions ?? ref<SessionData[]>([]);
-
-// Handle potentially missing fetchCounsellors method
-const fetchCounsellors = (sessionsComposable as typeof sessionsComposable & { fetchCounsellors?: () => Promise<void> }).fetchCounsellors || (() => Promise.resolve());
 
 const { enrolledPrograms, fetchPrograms } = usePrograms();
 const { currentSubscription, getCurrentSubscription } = useSubscriptions();
@@ -337,12 +349,25 @@ const { getProfile } = authComposable;
 // Handle user type properly
 const user = ref<UserProfile | null>(null);
 
-// Set user from auth composable if available
-if ('user' in authComposable && authComposable.user && authComposable.user.value) {
-  user.value = authComposable.user.value as unknown as UserProfile;
-}
+// Get real user data from localStorage
+const loadUserData = () => {
+  try {
+    const userDataStr = localStorage.getItem('user');
+    if (userDataStr) {
+      user.value = JSON.parse(userDataStr) as UserProfile;
+    }
+  } catch (error) {
+    console.error('Error loading user data:', error);
+  }
+};
+
+// Load user data immediately
+loadUserData();
 
 const showBookingModal = ref(false);
+const selectedCounselor = ref<any>(null);
+const counselors = ref<any[]>([]);
+const counselorsLoading = ref(false);
 
 const recentActivity = ref([
   {
@@ -411,7 +436,34 @@ const formatDate = (dateString: string) => {
 
 const handleBookingSuccess = () => {
   showBookingModal.value = false;
+  selectedCounselor.value = null;
   fetchSessions();
+};
+
+const openBookingModal = async () => {
+  // Open the modal - counselor selection will be handled inside the modal
+  showBookingModal.value = true;
+  selectedCounselor.value = null;
+};
+
+const fetchCounselorsForBooking = async () => {
+  counselorsLoading.value = true;
+  try {
+    const response = await apiClient.get('/users/counsellors/all');
+    
+    if (Array.isArray(response.data)) {
+      counselors.value = response.data;
+    } else if (response.data?.data && Array.isArray(response.data.data)) {
+      counselors.value = response.data.data;
+    } else {
+      counselors.value = [];
+    }
+  } catch (err) {
+    console.error('Failed to fetch counselors:', err);
+    counselors.value = [];
+  } finally {
+    counselorsLoading.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -430,7 +482,7 @@ onMounted(async () => {
     await Promise.all([
       fetchSessions().catch(() => console.log('Could not load sessions')),
       fetchPrograms().catch(() => console.log('Could not load programs')),
-      fetchCounsellors().catch(() => console.log('Could not load counsellors')),
+      fetchCounselors().catch(() => console.log('Could not load counsellors')),
       getCurrentSubscription().catch(() => console.log('No current subscription'))
     ]);
   } catch (error) {

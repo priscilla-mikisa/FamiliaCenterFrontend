@@ -13,7 +13,7 @@ interface EnhancedError extends Error {
 }
 
 const apiClient = axios.create({
-  baseURL: 'https://backend.fami.space/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -37,7 +37,6 @@ const isPublicEndpoint = (url: string): boolean => {
 apiClient.interceptors.request.use(
   (config) => {
     if (isPublicEndpoint(config.url || '')) {
-      console.log('Public endpoint, skipping auth:', config.url);
       return config;
     }
 
@@ -45,17 +44,12 @@ apiClient.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Adding Authorization header to request:', config.url);
-      console.log('Added token to request:', config.url);
     } else {
-      console.warn('No valid token found for request:', config.url);
-
       const authStatus = TokenManager.getAuthStatus();
       if (authStatus.wasRemembered || authStatus.userType) {
         console.warn('Token expired or missing, handling expired session');
         TokenManager.handleExpiredToken();
       }
-      console.log('No token available for request:', config.url);
     }
 
     return config;
@@ -68,33 +62,31 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
-    if (import.meta.env.DEV) {
-      console.log('API Success:', {
-        url: response.config.url,
-        status: response.status,
-        data: response.data
-      });
-    }
-    console.log('API Success:', response.config.url, response.status);
+    // Response successful, return as-is
     return response;
   },
   (error: AxiosError<ApiErrorResponse>) => {
-    console.error('API Error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data
-    });
+    const url = error.config?.url || '';
+    const status = error.response?.status;
+    
+    // Suppress error logging for 404s on subscription/current endpoint (valid case - no subscription)
+    const isSubscriptionCurrentEndpoint = url.includes('/subscriptions/current');
+    
+    if (!isSubscriptionCurrentEndpoint) {
+      console.error('API Error:', {
+        url,
+        status,
+        data: error.response?.data
+      });
+    }
 
-    if (!isPublicEndpoint(error.config?.url || '')) {
-      if (error.response?.status === 401 || error.response?.status === 403) {
+    if (!isPublicEndpoint(url)) {
+      if (status === 401 || status === 403) {
         console.warn('Authentication failed - handling expired token');
         TokenManager.handleExpiredToken();
       }
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      console.warn('Authentication failed - redirecting to login');
-      TokenManager.handleExpiredToken();
     }
-  }
+    
     let message = 'An error occurred';
 
     const errorData = error.response?.data;
@@ -102,12 +94,15 @@ apiClient.interceptors.response.use(
       message = errorData.detail;
     } else if (errorData?.error) {
       message = errorData.error;
-    } else if (error.response?.status === 403) {
+    } else if (status === 403) {
       message = 'Your session has expired. Please login again.';
-    } else if (error.response?.status === 401) {
+    } else if (status === 401) {
       message = 'Authentication required. Please login.';
-    } else if (error.response?.status === 404) {
-      message = `API endpoint not found: ${error.config?.url}`;
+    } else if (status === 404) {
+      // Don't show error message for subscription/current 404s
+      if (!isSubscriptionCurrentEndpoint) {
+        message = `API endpoint not found: ${url}`;
+      }
     } else if (error.message) {
       message = error.message;
     }

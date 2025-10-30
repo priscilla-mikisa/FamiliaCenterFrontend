@@ -96,30 +96,80 @@
           <p class="mt-2 text-gray-600">Loading sessions...</p>
         </div>
 
-        <div v-else-if="sessions.length > 0" class="space-y-3">
+        <div v-else-if="sessions.length > 0" class="space-y-4">
           <div
             v-for="session in sessions"
             :key="session.id"
-            class="bg-white rounded-lg shadow p-4"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
           >
             <div class="flex justify-between items-start">
-              <div>
-                <h4 class="font-medium text-gray-900">{{ getCounselorName(session) }}</h4>
-                <p class="text-sm text-gray-600">{{ formatDateTime(session.start_time) }}</p>
-                <span
-                  :class="getStatusClass(session.status)"
-                  class="inline-block px-2 py-1 text-xs font-medium rounded-full mt-2"
-                >
-                  {{ getStatusText(session.status) }}
-                </span>
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-1">{{ getCounselorName(session) }}</h4>
+                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>{{ formatDateTime(session.start_time) }}</span>
+                      </div>
+                      <div v-if="session.duration" class="flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>{{ session.duration }} mins</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="session.topic || (session as any).notes" class="mb-3">
+                  <p v-if="session.topic" class="text-sm font-medium text-gray-900 mb-1">{{ session.topic }}</p>
+                  <p v-if="(session as any).notes" class="text-sm text-gray-600 line-clamp-2">{{ (session as any).notes }}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span
+                    :class="getStatusClass(session.status)"
+                    class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
+                  >
+                    {{ getStatusText(session.status) }}
+                  </span>
+                </div>
               </div>
-              <button
-                v-if="canJoinSession(session)"
-                @click="joinSession(session)"
-                class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-              >
-                Join
-              </button>
+              <div class="ml-4 flex flex-col space-y-2">
+                <!-- Show Join button only if session is confirmed/accepted -->
+                <button
+                  v-if="canJoinSession(session)"
+                  @click="joinSession(session)"
+                  class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Join</span>
+                </button>
+                <!-- Show pending approval message if not confirmed -->
+                <div
+                  v-if="session.status === 'scheduled' || session.status === 'pending'"
+                  class="px-4 py-2 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg flex items-center space-x-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>Waiting for counselor approval</span>
+                </div>
+                <button
+                  @click="viewSessionDetails(session)"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View Details
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -231,12 +281,31 @@
     >
       {{ successMessage }}
     </div>
+
+    <!-- Session Details Modal -->
+    <SessionDetailsModal
+      v-if="showSessionDetails && selectedSession"
+      :session="selectedSession as any"
+      :is-open="showSessionDetails"
+      @close="closeSessionDetails"
+    />
+
+    <!-- Jitsi Meeting Room -->
+    <JitsiMeetingRoom
+      v-if="showMeetingRoom && selectedSession"
+      :meeting-link="selectedSession.meeting_link!"
+      :session-title="getCounselorName(selectedSession)"
+      :session-details="`${formatDateTime(selectedSession.start_time)}`"
+      @close="showMeetingRoom = false; selectedSession = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import apiClient from '@/services/apiClient';
+import JitsiMeetingRoom from '@/components/Sessions/JitsiMeetingRoom.vue';
+import SessionDetailsModal from '@/components/Sessions/SessionDetailsModal.vue';
 
 interface Counselor {
   id: string;
@@ -253,9 +322,18 @@ interface Session {
   start_time: string;
   status: string;
   meeting_link?: string;
+  topic?: string;
+  notes?: string;
+  duration?: number;
+  session_date?: string;
+  session_time?: string;
   counsellor?: {
     first_name: string;
     last_name: string;
+  };
+  counsellor_name?: string;
+  counselor?: {
+    name?: string;
   };
 }
 
@@ -276,6 +354,9 @@ const counselors = ref<Counselor[]>([]);
 const sessions = ref<Session[]>([]);
 const showBookingModal = ref<boolean>(false);
 const selectedCounselor = ref<Counselor | null>(null);
+const showMeetingRoom = ref<boolean>(false);
+const showSessionDetails = ref<boolean>(false);
+const selectedSession = ref<Session | null>(null);
 
 const bookingForm = ref<BookingForm>({
   date: '',
@@ -329,18 +410,24 @@ const fetchSessions = async (): Promise<void> => {
 
   try {
     const response = await apiClient.get('/users/sessions/all');
+    const responseData = response.data;
 
-    if (response.data?.data === null) {
-      sessions.value = [];
-    } else if (Array.isArray(response.data)) {
-      sessions.value = response.data;
-    } else if (Array.isArray(response.data?.data)) {
-      sessions.value = response.data.data;
-    } else {
-      sessions.value = [];
+    // Handle different response structures
+    let sessionsList: any[] = [];
+
+    if (Array.isArray(responseData)) {
+      sessionsList = responseData;
+    } else if (responseData?.sessions && Array.isArray(responseData.sessions)) {
+      sessionsList = responseData.sessions;
+    } else if (responseData?.data) {
+      if (Array.isArray(responseData.data)) {
+        sessionsList = responseData.data;
+      } else if (responseData.data === null) {
+        sessionsList = [];
+      }
     }
 
-    console.log('Loaded sessions:', sessions.value.length);
+    sessions.value = sessionsList;
   } catch (err) {
     console.error('Failed to load sessions:', err);
     sessions.value = [];
@@ -474,10 +561,31 @@ const canJoinSession = (session: Session): boolean => {
 
 const joinSession = (session: Session): void => {
   if (session.meeting_link) {
-    window.open(session.meeting_link, '_blank');
+    selectedSession.value = session;
+    showMeetingRoom.value = true;
   } else {
-    alert('Meeting link will be available when the counselor starts the session.');
+    alert('Meeting link will be available when the counselor accepts the session.');
   }
+};
+
+const viewSessionDetails = (session: Session): void => {
+  // Transform session data to match SessionDetailsModal expectations
+  const transformedSession = {
+    ...session,
+    counsellor_name: getCounselorName(session),
+    session_date: session.session_date || (session.start_time ? new Date(session.start_time).toISOString().split('T')[0] : ''),
+    session_time: session.session_time || (session.start_time ? new Date(session.start_time).toTimeString().split(' ')[0].substring(0, 5) : ''),
+    counselor: session.counselor || {
+      name: getCounselorName(session)
+    }
+  };
+  selectedSession.value = transformedSession as Session;
+  showSessionDetails.value = true;
+};
+
+const closeSessionDetails = (): void => {
+  showSessionDetails.value = false;
+  selectedSession.value = null;
 };
 
 onMounted(() => {

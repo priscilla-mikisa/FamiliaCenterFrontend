@@ -13,6 +13,7 @@ export interface UserData {
   phone_number?: string;
   country_code?: string;
   speciality?: string;
+  specialization?: string;
   bio?: string;
   profile_picture?: string;
   salutation?: string;
@@ -96,8 +97,6 @@ export class TokenManager {
   }
 
   static storeToken(token: string, userData: UserData, userType: string, rememberMe: boolean = false) {
-    console.log('Storing token with rememberMe:', rememberMe);
-
     this.clearTokens();
 
     if (rememberMe) {
@@ -111,13 +110,6 @@ export class TokenManager {
     localStorage.setItem(this.TOKEN_KEYS.USER_TYPE, userType);
     localStorage.setItem(this.TOKEN_KEYS.USER_ID, userData?.id || '');
     localStorage.setItem(this.TOKEN_KEYS.USER, JSON.stringify(userData));
-
-    const tokenInfo = this.getTokenInfo(token);
-    if (tokenInfo) {
-      const expiryDate = new Date(tokenInfo.expiresAt * 1000);
-      console.log('Token will expire at:', expiryDate.toISOString());
-      console.log('Time until expiry (hours):', tokenInfo.timeUntilExpiry / 3600);
-    }
   }
 
   static clearTokens() {
@@ -155,8 +147,6 @@ export class TokenManager {
     this.clearTokens();
 
     if (wasRemembered) {
-      console.log('User had remember me selected, will show session expired message');
-
       sessionStorage.setItem('sessionExpired', 'true');
       sessionStorage.setItem('previousUserType', userType || '');
     }

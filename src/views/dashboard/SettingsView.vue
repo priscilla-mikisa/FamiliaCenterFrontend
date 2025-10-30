@@ -37,9 +37,11 @@
             <input
               v-model="profileForm.email"
               type="email"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              disabled
+              readonly
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
             />
+            <p class="mt-1 text-xs text-gray-500">Email cannot be changed</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -342,7 +344,9 @@ const handleProfileUpdate = async (): Promise<void> => {
   profileMessage.value = null;
 
   try {
-    await updateProfile(profileForm.value);
+    // Exclude email from update request
+    const { email, ...updateData } = profileForm.value;
+    await updateProfile(updateData);
     profileMessage.value = { type: 'success', text: 'Profile updated successfully!' };
 
     setTimeout(() => {

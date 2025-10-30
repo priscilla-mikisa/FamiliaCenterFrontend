@@ -7,9 +7,10 @@
         </div>
 
         <h3 class="text-xl font-bold text-gray-900 mb-2">Log out of your account?</h3>
-        <p class="text-gray-600 mb-6">
-          Are you sure you want to log out? You'll need to sign back in to access your account.
+        <p class="text-gray-600 mb-2">
+          Are you sure you want to log out, <span class="font-semibold text-gray-900">{{ userName }}</span>?
         </p>
+        <p class="text-sm text-gray-500 mb-6">You'll need to sign back in to access your account.</p>
 
         <div class="flex justify-center space-x-4">
           <button
@@ -39,10 +40,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { LogOutIcon } from 'lucide-vue-next';
 import { AuthService } from '@/services/apiService';
+import { TokenManager } from '@/services/tokenManager';
 
 interface Props {
   isOpen: boolean;
@@ -56,6 +58,22 @@ defineEmits<{
 const router = useRouter();
 const isLoading = ref(false);
 
+// Get user name from localStorage
+const userName = computed(() => {
+  try {
+    const userDataStr = localStorage.getItem('user');
+    if (userDataStr) {
+      const userData = JSON.parse(userDataStr);
+      const firstName = userData.first_name || '';
+      const lastName = userData.last_name || '';
+      return `${firstName} ${lastName}`.trim() || userData.email || 'User';
+    }
+    return 'User';
+  } catch {
+    return 'User';
+  }
+});
+
 const handleLogout = async () => {
   isLoading.value = true;
 
@@ -64,9 +82,8 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    // Clear tokens regardless of API response
-    localStorage.removeItem('authToken');
-    sessionStorage.removeItem('authToken');
+    // Clear all tokens using TokenManager
+    TokenManager.clearTokens();
 
     // Redirect to login
     setTimeout(() => {

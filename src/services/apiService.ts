@@ -95,13 +95,19 @@ export interface SessionResponse {
 }
 
 export interface SubscriptionPlan {
-  id: string;
+  id: string; // Frontend normalized ID (maps from backend ID)
+  ID?: string; // Backend ID field (capitalized)
   name: string;
+  description?: string;
   price: number;
-  currency: string;
-  billing_cycle: string;
-  features: string[];
+  currency?: string;
+  billing_cycle?: string;
+  duration?: number;
+  features?: string[];
   is_popular?: boolean;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+  DeletedAt?: string | null;
 }
 
 export interface CurrentSubscription {
@@ -192,14 +198,9 @@ export const AuthService = {
   },
 
   async logout() {
-    try {
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    } finally {
-      localStorage.clear();
-      sessionStorage.clear();
-    }
+    // Client-side logout only (backend doesn't have logout endpoint)
+    localStorage.clear();
+    sessionStorage.clear();
     return { success: true };
   }
 };
@@ -222,9 +223,14 @@ export const SessionService = {
     topic?: string;
     notes?: string;
   }) {
+    // Create a proper ISO 8601 datetime string with timezone
+    const dateTimeString = `${sessionData.session_date}T${sessionData.session_time}:00`;
+    const dateObj = new Date(dateTimeString);
+    const isoString = dateObj.toISOString(); // This includes the 'Z' timezone
+    
     const backendData: BookSessionRequest = {
       counsellor_id: sessionData.counsellor_id,
-      start_time: `${sessionData.session_date}T${sessionData.session_time}:00`,
+      start_time: isoString,
       duration: 60,
       topic: sessionData.topic || 'General Counseling',
       bio: sessionData.notes || ''
@@ -276,7 +282,7 @@ export const UserService = {
 export const SubscriptionService = {
   async getSubscriptionPlans() {
     try {
-      const response = await apiClient.get('/subscriptions');
+      const response = await apiClient.get('/users/subscriptions/all');
       return response.data;
     } catch (error) {
       console.warn('Subscriptions API not available, using mock data. Error:', error);
@@ -316,7 +322,15 @@ export const SubscriptionService = {
 
   async subscribeToPlan(planId: string) {
     try {
-      const response = await apiClient.post('/subscriptions/subscribe', { plan_id: planId });
+      // Validate planId before sending
+      if (!planId || planId.trim() === '') {
+        throw new Error('Plan ID is required');
+      }
+      
+      // Backend expects plan_id (lowercase with underscore) in the request body
+      const requestBody = { plan_id: planId };
+      
+      const response = await apiClient.post('/users/subscriptions/subscribe', requestBody);
       return response.data;
     } catch (error) {
       console.warn('Subscribe API not available, using mock response. Error:', error);
@@ -337,7 +351,7 @@ export const SubscriptionService = {
 
   async cancelSubscription() {
     try {
-      const response = await apiClient.post('/subscriptions/cancel');
+      const response = await apiClient.post('/users/subscriptions/cancel');
       return response.data;
     } catch (error) {
       console.warn('Cancel subscription API not available, using mock response. Error:', error);
@@ -348,15 +362,30 @@ export const SubscriptionService = {
 
   async getCurrentSubscription() {
     try {
-      const response = await apiClient.get('/subscriptions/current');
+      const response = await apiClient.get('/users/subscriptions/current');
+      if (!response.data) {
+        return { subscription: null };
+      }
       return response.data;
-    } catch (error) {
-      console.warn('Current subscription API not available, using local storage. Error:', error);
+    } catch (error: any) {
+      // Handle 404 as a valid case (no subscription) - don't treat as error
+      if (error?.response?.status === 404) {
+        return { subscription: null };
+      }
+      
+      // For other errors, try localStorage fallback
+      console.warn('Current subscription API error, checking local storage. Error:', error);
       const subStr = localStorage.getItem('currentSubscription');
       if (subStr) {
-        return { subscription: JSON.parse(subStr) };
+        try {
+          return { subscription: JSON.parse(subStr) };
+        } catch (parseError) {
+          console.warn('Failed to parse subscription from localStorage');
+        }
       }
-      return null;
+      
+      // Return null subscription for any other case
+      return { subscription: null };
     }
   }
 };

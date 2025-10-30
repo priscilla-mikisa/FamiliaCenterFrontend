@@ -512,7 +512,7 @@ const handleSubmit = async () => {
 
       console.log('Submitting counselor registration with correct field names...');
 
-      const response = await axios.post('https://backend.fami.space/api/v1/counsellor/register', counselorData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/counsellor/register`, counselorData, {
         headers: {
           'Content-Type': 'application/json'
         }

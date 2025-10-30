@@ -215,6 +215,10 @@ const isCurrentPlan = (planId: string) => {
 
 const selectPlan = async (plan: SubscriptionPlan) => {
   try {
+    if (!plan.id) {
+      alert('Invalid plan ID. Please try again.');
+      return;
+    }
     await subscribeToPlan(plan.id);
     successMessage.value = `Successfully subscribed to ${plan.name}!`;
 

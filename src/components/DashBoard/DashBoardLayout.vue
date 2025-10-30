@@ -48,7 +48,7 @@
             <UserIcon class="w-5 h-5 text-green-600" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 truncate">{{ user?.name || 'User' }}</p>
+            <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
             <p class="text-xs text-gray-500">Patient</p>
           </div>
           <button
@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref} from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   HomeIcon,
@@ -120,14 +120,37 @@ import {
   UserIcon,
   LogOutIcon
 } from 'lucide-vue-next';
+import LogoutModal from './LogoutModal.vue';
+import type { UserData } from '@/services/tokenManager';
 
 const route = useRoute();
 const isMenuOpen = ref(false);
 const showLogoutModal = ref(false);
 
-const user = ref({
-  name: 'Alex Morgan',
-  email: 'alex@example.com'
+const user = ref<UserData | null>(null);
+
+// Get real user data from localStorage
+onMounted(() => {
+  try {
+    const userDataStr = localStorage.getItem('user');
+    if (userDataStr) {
+      user.value = JSON.parse(userDataStr);
+    }
+  } catch (error) {
+    console.error('Error loading user data:', error);
+  }
+});
+
+// Computed properties for user display
+const userName = computed(() => {
+  if (!user.value) return 'User';
+  const firstName = user.value.first_name || '';
+  const lastName = user.value.last_name || '';
+  return `${firstName} ${lastName}`.trim() || 'User';
+});
+
+const userEmail = computed(() => {
+  return user.value?.email || '';
 });
 
 const navigationItems = [

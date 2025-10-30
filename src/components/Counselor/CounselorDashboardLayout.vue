@@ -48,8 +48,8 @@
             <UserIcon class="w-5 h-5 text-blue-600" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 truncate">{{ user?.name || 'Dr. Counselor' }}</p>
-            <p class="text-xs text-gray-500">{{ user?.specialization || 'Counselor' }}</p>
+            <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
+            <p class="text-xs text-gray-500">{{ specialization }}</p>
           </div>
           <button
             @click="showLogoutModal = true"
@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   HomeIcon,
@@ -130,15 +130,37 @@ import {
   BookOpenIcon
 } from 'lucide-vue-next';
 import LogoutModal from '../DashBoard/LogoutModal.vue';
+import type { UserData } from '@/services/tokenManager';
 
 const route = useRoute();
 const isMenuOpen = ref(false);
 const showLogoutModal = ref(false);
 
-const user = ref({
-  name: 'Dr. Sarah Johnson',
-  specialization: 'Marriage Counseling',
-  email: 'sarah@familiacenter.com'
+const user = ref<UserData | null>(null);
+
+// Get real user data from localStorage
+onMounted(() => {
+  try {
+    const userDataStr = localStorage.getItem('user');
+    if (userDataStr) {
+      user.value = JSON.parse(userDataStr);
+    }
+  } catch (error) {
+    console.error('Error loading user data:', error);
+  }
+});
+
+// Computed properties for user display
+const userName = computed(() => {
+  if (!user.value) return 'Dr. Counselor';
+  const salutation = user.value.salutation || 'Dr.';
+  const firstName = user.value.first_name || '';
+  const lastName = user.value.last_name || '';
+  return `${salutation} ${firstName} ${lastName}`.trim() || 'Dr. Counselor';
+});
+
+const specialization = computed(() => {
+  return user.value?.speciality || user.value?.specialization || 'Counselor';
 });
 
 const todayStats = ref({

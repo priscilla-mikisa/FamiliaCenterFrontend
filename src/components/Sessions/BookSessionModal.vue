@@ -1,9 +1,9 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-    <div class="bg-white rounded-xl max-w-md w-full">
+    <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Book Session with {{ counselor?.first_name }} {{ counselor?.last_name }}</h3>
+          <h3 class="text-lg font-semibold">Book New Session</h3>
           <button @click="$emit('close')" class="p-1 hover:bg-gray-100 rounded">
             <XIcon class="w-5 h-5" />
           </button>
@@ -11,6 +11,22 @@
       </div>
 
       <form @submit.prevent="handleBooking" class="p-6 space-y-4">
+        <div v-if="availableCounselors.length > 0">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Select Counselor</label>
+          <select
+            v-model="selectedCounselorId"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+          >
+            <option value="">Choose a counselor</option>
+            <option v-for="counselor in availableCounselors" :key="counselor.id" :value="counselor.id">
+              {{ counselor.salutation || 'Dr.' }} {{ counselor.first_name }} {{ counselor.last_name }} - {{ counselor.speciality }}
+            </option>
+          </select>
+        </div>
+        <div v-else class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm text-yellow-800">No counselors available at the moment.</p>
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Session Date</label>
           <input
@@ -78,14 +94,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { XIcon } from 'lucide-vue-next';
 import { useSessions } from '@/composables/useSessions';
 import type { CounsellorResponse } from '@/services/apiService';
 
 interface Props {
   isOpen: boolean;
-  counselor: CounsellorResponse | null;
+  counselor?: CounsellorResponse | null;
 }
 
 const props = defineProps<Props>();
@@ -95,7 +111,9 @@ const emit = defineEmits<{
   success: [];
 }>();
 
-const { bookSession } = useSessions();
+const sessionsComposable = useSessions();
+const { bookSession, fetchCounselors } = sessionsComposable;
+const counselors = sessionsComposable.counsellors;
 
 const bookingForm = ref({
   session_date: '',
@@ -104,20 +122,59 @@ const bookingForm = ref({
   topic: ''
 });
 
+const selectedCounselorId = ref('');
 const bookingLoading = ref(false);
+
+const availableCounselors = computed(() => {
+  // If a counselor was passed as prop, use it; otherwise use the list
+  if (props.counselor) {
+    return [props.counselor];
+  }
+  return counselors.value;
+});
+
+const selectedCounselor = computed(() => {
+  if (!selectedCounselorId.value) return null;
+  return availableCounselors.value.find(c => c.id === selectedCounselorId.value);
+});
 
 const minDate = computed(() => {
   const today = new Date();
   return today.toISOString().split('T')[0];
 });
 
+// Fetch counselors when modal opens
+watch(() => props.isOpen, (newValue) => {
+  if (newValue && !props.counselor) {
+    fetchCounselors();
+  }
+});
+
+// If a counselor is passed as prop, set it as selected
+watch(() => props.counselor, (newCounselor) => {
+  if (newCounselor) {
+    selectedCounselorId.value = newCounselor.id;
+  }
+}, { immediate: true });
+
+onMounted(() => {
+  if (!props.counselor) {
+    fetchCounselors();
+  }
+});
+
 const handleBooking = async (): Promise<void> => {
-  if (!props.counselor) return;
+  const counselor = selectedCounselor.value || props.counselor;
+  
+  if (!counselor) {
+    alert('Please select a counselor');
+    return;
+  }
 
   bookingLoading.value = true;
   try {
     await bookSession({
-      counsellor_id: props.counselor.id,
+      counsellor_id: counselor.id,
       session_date: bookingForm.value.session_date,
       session_time: bookingForm.value.session_time,
       topic: bookingForm.value.topic,
@@ -130,6 +187,7 @@ const handleBooking = async (): Promise<void> => {
       duration: '60',
       topic: ''
     };
+    selectedCounselorId.value = '';
 
     emit('success');
   } catch (error) {

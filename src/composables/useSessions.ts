@@ -16,6 +16,7 @@ interface BackendSession {
   notes?: string;
   meeting_link?: string;
   feedback?: string;
+  user?: any;
   counsellor?: {
     id?: string;
     first_name?: string;
@@ -51,7 +52,7 @@ export const useSessions = () => {
   const error = ref<string | null>(null);
 
   // Transform backend session data to frontend format
-  const transformSession = (session: BackendSession): Session => {
+  const transformSession = (session: BackendSession): any => {
     const sessionData = session.session || session.data || session;
 
     // Extract counsellor information safely
@@ -83,7 +84,9 @@ export const useSessions = () => {
       end_time: sessionData.end_time || endTime.toISOString(),
       meeting_link: sessionData.meeting_link || '',
       feedback: sessionData.feedback || '',
-      description: sessionData.bio || sessionData.notes || ''
+      description: sessionData.bio || sessionData.notes || '',
+      // Preserve user object from backend for counselor views
+      user: sessionData.user
     };
   };
 
@@ -119,9 +122,7 @@ export const useSessions = () => {
     loading.value = true;
     error.value = null;
     try {
-      console.log('Fetching counselors from API...');
       const response = await UserService.getAllCounsellors();
-      console.log('Counselors API response:', response);
 
       // Handle different response formats
       let counsellorsList: CounsellorResponse[] = [];
@@ -139,7 +140,6 @@ export const useSessions = () => {
       }
 
       counsellors.value = counsellorsList;
-      console.log('Processed counselors:', counsellors.value);
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch counsellors';
       console.error('Error fetching counsellors:', err);
@@ -263,7 +263,12 @@ export const useSessions = () => {
 
       const sessionIndex = sessions.value.findIndex(s => s.id === sessionId);
       if (sessionIndex !== -1) {
-        sessions.value[sessionIndex].status = 'accepted';
+        // Update status to "confirmed" (backend standard)
+        sessions.value[sessionIndex].status = 'confirmed';
+        // Also update the acceptance flags for UI consistency
+        (sessions.value[sessionIndex] as any).is_counsellor_accepted = true;
+        (sessions.value[sessionIndex] as any).is_counselor_accepted = true;
+        (sessions.value[sessionIndex] as any).counsellor_accepted = true;
       }
 
       await fetchCounsellorSessions();
@@ -281,13 +286,13 @@ export const useSessions = () => {
   const getSessionStatusText = (status: string): string => {
     const statusMap: Record<string, string> = {
       'pending': 'Pending Approval',
+      'scheduled': 'Scheduled',
       'confirmed': 'Confirmed',
       'accepted': 'Accepted',
       'rejected': 'Rejected',
       'completed': 'Completed',
       'cancelled': 'Cancelled',
-      'live': 'Live Now',
-      'scheduled': 'Scheduled'
+      'live': 'Live Now'
     };
     return statusMap[status] || status;
   };
@@ -296,13 +301,13 @@ export const useSessions = () => {
   const getSessionStatusClass = (status: string): string => {
     const statusClasses: Record<string, string> = {
       'pending': 'bg-yellow-100 text-yellow-800',
-      'confirmed': 'bg-blue-100 text-blue-800',
+      'scheduled': 'bg-yellow-100 text-yellow-800',
+      'confirmed': 'bg-green-100 text-green-800',
       'accepted': 'bg-green-100 text-green-800',
       'rejected': 'bg-red-100 text-red-800',
       'completed': 'bg-gray-100 text-gray-800',
       'cancelled': 'bg-red-100 text-red-800',
-      'live': 'bg-green-100 text-green-800',
-      'scheduled': 'bg-blue-100 text-blue-800'
+      'live': 'bg-green-100 text-green-800'
     };
     return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };

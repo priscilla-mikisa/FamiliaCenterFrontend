@@ -32,7 +32,7 @@ const userTypes = [
     features: [
       "Access to 6-week structured programs",
       "One-time counseling sessions",
-      "Live sessions via Google Meet",
+      "Live sessions via Jitsi Meet",
       "Recorded session playback",
       "Topic selection (Parenting, Marriage, etc.)",
       "Session reminders & notifications"
@@ -43,7 +43,7 @@ const userTypes = [
     features: [
       "Professional dashboard",
       "Session management tools",
-      "Google Meet integration",
+      "Jitsi Meet integration",
       "Resource upload capabilities",
       "Progress tracking & notes",
       "Client assignment management"
