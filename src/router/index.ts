@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue';
 import SignUpView from '@/views/SignUpView.vue';
 import ForumDetailsView from '@/views/ForumDetailsView.vue';
 
+
 import TermsOfUse from '@/components/TermsOfUse.vue';
 import PrivacyPolicy from '@/components/PrivacyPolicy.vue';
 import DashBoardLayout from '@/components/DashBoard/DashBoardLayout.vue';
@@ -46,6 +47,24 @@ const router = createRouter({
       component: HomeView,
       meta: { requiresGuest: true }
     },
+             {
+    path: '/privacy-policy',
+    name: 'PrivacyPolicy',
+    component: PrivacyPolicy,
+    meta: {
+      title: 'Privacy Policy - FamiSpace',
+      description: 'Learn how FamiSpace collects, uses, and protects your personal information.'
+    }
+  },
+  {
+    path: '/te',
+    name: 'TermsOfUse',
+    component: TermsOfUse,
+    meta: {
+      title: 'Terms of Use - FamiSpace',
+      description: 'Guidelines and terms for using the FamiSpace platform.'
+    }
+  },
     {
       path: '/login',
       name: 'login',
@@ -150,16 +169,7 @@ const router = createRouter({
           name: 'counselor-settings',
           component: CounselorSettings
         },
-        {
-      path: '/terms-of-use',
-      name: 'terms-of-use',
-      component: TermsOfUse,
-    },
-    {
-      path: '/privacy-policy',
-      name: 'privacy-policy',
-      component: PrivacyPolicy,
-    },
+
       ]
     },
 
@@ -328,5 +338,6 @@ router.beforeEach((to, from, next) => {
 router.onError((error) => {
   console.error('Router error:', error);
 });
+
 
 export default router;

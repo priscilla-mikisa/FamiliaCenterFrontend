@@ -109,7 +109,7 @@
         <a href="#features" class="block py-2 text-gray-700">Features</a>
         <a href="#programs" class="block py-2 text-gray-700">Programs</a>
         <a href="#about" class="block py-2 text-gray-700">About</a>
-        <a href="#contact" class="block py-2 text-gray-700">Contact</a>
+        <a href="#footer" class="block py-2 text-gray-700">Contact</a>
 
         <!-- Mobile Forums Section -->
         <div class="pt-4 border-t border-gray-200">

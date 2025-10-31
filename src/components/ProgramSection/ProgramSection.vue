@@ -66,7 +66,7 @@
       </div>
 
       <div class="text-center mt-8">
-        <router-link to="https://fami.space/programs">
+        <router-link to="/dashboard/programs">
           <button class="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 font-medium">
             View All Programs
           </button>

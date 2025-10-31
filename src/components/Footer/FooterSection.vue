@@ -56,22 +56,28 @@
 
 <script setup lang="ts">
 const platformLink = [
+  {
+    name: "Home",
+    url: "#home"
+  },
+  {
+    name: "Features",
+    url: "#features"
+  },
   {  name: "Programs",
     url: "#programs"
   },
-  {
-    name: "Resources",
-    url: "#resources"
-  },
-  {
-    name: "Support",
-    url: "#support"
-  }
+
+  { name: "About Us",
+  url: "#about" }
 ];
 
 
 const companyLinks = [
-  { name: "About Us", url: "#about" },
-  { name: "Counselors", url: "#counselors" },
-  { name: "Privacy Policy", url: "/privacy-policy" }, { name: "Terms of Service", url: "/terms-of-use" } ];
+  { name: "Privacy Policy",
+  url: "/privacy-policy-page" },
+  
+  { name: "Terms of Use",
+  url: "/terms-of-use-page" }
+];
 </script>

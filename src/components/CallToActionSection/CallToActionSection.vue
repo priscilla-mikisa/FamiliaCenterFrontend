@@ -13,9 +13,7 @@
           Browse Programs
         </button>
         </router-link>
-        <button class="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-600 font-medium">
-          Free 15-Min Consultation
-        </button>
+        
       </div>
       <div class="mt-8 flex flex-wrap justify-center gap-6 text-green-100 text-sm">
         <div v-for="(item, index) in benefits" :key="index" class="flex items-center">
