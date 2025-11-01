@@ -7,7 +7,7 @@ export const dummyForums: Forum[] = [
     description: 'Healing your way to Parenthood - A Must-Attend FOR Young Parents, Newlyweds and Engaged Couples',
     category: 'Webinar',
     color: 'bg-teal-500',
-    date: '2025-11-02',
+    date: '2025-11-09',
     time: '10:00 AM',
     duration: '2 hours',
     capacity: 50,
