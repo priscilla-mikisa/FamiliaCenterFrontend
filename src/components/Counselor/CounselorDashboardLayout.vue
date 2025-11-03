@@ -131,20 +131,24 @@ import {
 } from 'lucide-vue-next';
 import LogoutModal from '../DashBoard/LogoutModal.vue';
 import type { UserData } from '@/services/tokenManager';
+import { useSessions } from '@/composables/useSessions';
 
 const route = useRoute();
 const isMenuOpen = ref(false);
 const showLogoutModal = ref(false);
 
 const user = ref<UserData | null>(null);
+const { sessions, fetchCounsellorSessions } = useSessions();
 
 // Get real user data from localStorage
-onMounted(() => {
+onMounted(async () => {
   try {
     const userDataStr = localStorage.getItem('user');
     if (userDataStr) {
       user.value = JSON.parse(userDataStr);
     }
+    // Fetch sessions to calculate stats
+    await fetchCounsellorSessions();
   } catch (error) {
     console.error('Error loading user data:', error);
   }
@@ -163,9 +167,34 @@ const specialization = computed(() => {
   return user.value?.speciality || user.value?.specialization || 'Counselor';
 });
 
-const todayStats = ref({
-  sessions: 5,
-  clients: 12
+// Calculate real stats from API data
+const todayStats = computed(() => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Count today's sessions
+  const todaySessionsCount = sessions.value.filter(session => {
+    if (!session.session_date && session.start_time) {
+      const sessionDate = new Date(session.start_time).toISOString().split('T')[0];
+      return sessionDate === today;
+    }
+    return session.session_date === today;
+  }).length;
+  
+  // Count unique active clients (clients with sessions)
+  const uniqueClientIds = new Set();
+  sessions.value.forEach(session => {
+    if (session.user) {
+      const clientId = session.user.id || session.user.user_id || session.user.email;
+      if (clientId) {
+        uniqueClientIds.add(clientId);
+      }
+    }
+  });
+  
+  return {
+    sessions: todaySessionsCount,
+    clients: uniqueClientIds.size
+  };
 });
 
 const navigationItems = [
