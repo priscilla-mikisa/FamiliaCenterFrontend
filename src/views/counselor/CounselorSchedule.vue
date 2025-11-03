@@ -1,5 +1,11 @@
 <template>
   <div class="space-y-6">
+    <div v-if="loading" class="bg-white rounded-xl shadow p-6 text-center">
+      <p class="text-gray-600">Loading schedule...</p>
+    </div>
+    <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4">
+      <p class="text-red-600">Error loading schedule: {{ error }}</p>
+    </div>
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <div class="flex items-center space-x-4">
@@ -242,12 +248,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
   XIcon
 } from 'lucide-vue-next';
+import { useSessions } from '@/composables/useSessions';
+import { SessionService } from '@/services/apiService';
+
+const router = useRouter();
+
+const { sessions, fetchCounsellorSessions, loading, error } = useSessions();
 
 const currentWeekStart = ref(new Date());
 const viewMode = ref('week');
@@ -278,36 +291,109 @@ const daysOfWeek = [
   { label: 'Sun', value: 'sunday' }
 ];
 
-const clients = ref([
-  { id: 1, name: 'John & Mary Smith' },
-  { id: 2, name: 'Jennifer Wilson' },
-  { id: 3, name: 'The Johnson Family' }
-]);
+// Extract unique clients from sessions
+const clients = computed(() => {
+  const clientMap = new Map();
+  
+  sessions.value.forEach(session => {
+    if (session.user) {
+      const userId = session.user.id || session.user.user_id || String(session.id);
+      const userName = session.user.name || 
+                      session.user.first_name || 
+                      `${session.user.first_name || ''} ${session.user.last_name || ''}`.trim() ||
+                      session.user.email ||
+                      'Unknown Client';
+      
+      if (!clientMap.has(userId)) {
+        clientMap.set(userId, {
+          id: userId,
+          name: userName
+        });
+      }
+    }
+  });
+  
+  return Array.from(clientMap.values());
+});
 
-const appointments = ref([
-  {
-    id: 1,
-    client: 'John & Mary Smith',
-    date: new Date().toISOString().split('T')[0],
-    time: '09:00',
-    duration: 60,
-    type: 'Couples Session',
-    dayIndex: 1,
-    hour: 9,
-    canStart: true
-  },
-  {
-    id: 2,
-    client: 'Jennifer Wilson',
-    date: new Date().toISOString().split('T')[0],
-    time: '11:00',
-    duration: 45,
-    type: 'Individual Session',
-    dayIndex: 1,
-    hour: 11,
-    canStart: false
+// Transform API sessions into appointment format for the schedule
+const appointments = computed(() => {
+  if (!sessions.value || sessions.value.length === 0) {
+    return [];
   }
-]);
+  
+  return sessions.value.map(session => {
+    if (!session.session_date || !session.session_time) {
+      return null;
+    }
+    
+    const sessionDate = new Date(`${session.session_date}T${session.session_time}`);
+    const sessionHour = parseInt(session.session_time.split(':')[0]);
+    
+    // Calculate dayIndex relative to current week start (Monday = 0)
+    const weekStart = new Date(currentWeekStart.value);
+    weekStart.setHours(0, 0, 0, 0);
+    const aptDate = new Date(sessionDate);
+    aptDate.setHours(0, 0, 0, 0);
+    
+    const daysDiff = Math.floor((aptDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+    const sessionDayIndex = daysDiff; // 0 = Monday of current week, 6 = Sunday
+    
+    // Check if session can be started (within 15 minutes before or 5 minutes after start time)
+    const now = new Date();
+    const timeDiff = sessionDate.getTime() - now.getTime();
+    const canStart = session.status === 'scheduled' && 
+                     timeDiff <= 15 * 60 * 1000 && 
+                     timeDiff >= -5 * 60 * 1000;
+    
+    // Extract client name
+    const clientName = session.user?.name || 
+                       session.user?.first_name || 
+                       `${session.user?.first_name || ''} ${session.user?.last_name || ''}`.trim() ||
+                       session.user?.email ||
+                       session.counsellor_name ||
+                       'Unknown Client';
+    
+    // Map session types
+    const sessionType = session.title || session.topic || 'Individual Session';
+    let mappedType = 'Individual Session';
+    if (sessionType.toLowerCase().includes('couple')) {
+      mappedType = 'Couples Session';
+    } else if (sessionType.toLowerCase().includes('family')) {
+      mappedType = 'Family Session';
+    } else if (sessionType.toLowerCase().includes('consultation')) {
+      mappedType = 'Consultation';
+    } else {
+      mappedType = 'Individual Session';
+    }
+    
+    return {
+      id: session.id,
+      client: clientName,
+      date: session.session_date,
+      time: session.session_time,
+      duration: session.duration || 60,
+      type: mappedType,
+      dayIndex: sessionDayIndex,
+      hour: sessionHour,
+      canStart: canStart,
+      status: session.status
+    };
+  }).filter((apt): apt is NonNullable<typeof apt> => {
+    // Filter out null values and only show appointments that fall within the current week view
+    if (!apt) return false;
+    
+    const aptDate = new Date(apt.date);
+    const weekStart = new Date(currentWeekStart.value);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    aptDate.setHours(0, 0, 0, 0);
+    return aptDate >= weekStart && aptDate <= weekEnd && apt.dayIndex >= 0 && apt.dayIndex < 7;
+  });
+});
 
 const timeSlots = Array.from({ length: 10 }, (_, i) => i + 8); // 8 AM to 6 PM
 
@@ -358,7 +444,17 @@ const nextWeek = () => {
 };
 
 const getAppointmentsForSlot = (dayIndex: number, hour: number) => {
-  return appointments.value.filter(apt => apt.dayIndex === dayIndex && apt.hour === hour);
+  // Filter appointments by matching the day of the week and hour
+  return appointments.value.filter(apt => {
+    const aptDate = new Date(apt.date);
+    const weekStart = new Date(currentWeekStart.value);
+    const dayOffset = dayIndex; // dayIndex is 0-6 where 0 is Monday
+    const targetDate = new Date(weekStart);
+    targetDate.setDate(weekStart.getDate() + dayOffset);
+    
+    // Check if appointment date matches the target date and hour matches
+    return aptDate.toDateString() === targetDate.toDateString() && apt.hour === hour;
+  });
 };
 
 const getAppointmentClass = (type: string) => {
@@ -393,26 +489,54 @@ const viewAppointment = (appointment: Appointment) => {
 };
 
 const startSession = (appointmentId: number) => {
-  console.log('Starting session:', appointmentId);
+  // Find the appointment and navigate to join session
+  const appointment = appointments.value.find(apt => apt.id === appointmentId);
+  if (appointment) {
+    // Navigate to join session page (using dashboard route as counselor sessions share the same join endpoint)
+    router.push(`/dashboard/sessions/join/${appointmentId}`);
+  } else {
+    console.error('Appointment not found:', appointmentId);
+  }
 };
 
-const createAppointment = () => {
-  console.log('Creating appointment:', newAppointment.value);
-  showNewAppointment.value = false;
-  newAppointment.value = {
-    clientId: '',
-    date: '',
-    time: '',
-    duration: '60',
-    type: 'individual',
-    notes: ''
-  };
+const createAppointment = async () => {
+  try {
+    // Note: This endpoint expects the client to book, not the counselor
+    // For counselor-initiated appointments, the backend would need a different endpoint
+    // For now, we'll attempt to use the existing booking endpoint
+    await SessionService.bookSession({
+      counsellor_id: '', // This would be the current counselor's ID
+      session_date: newAppointment.value.date,
+      session_time: newAppointment.value.time,
+      topic: newAppointment.value.type,
+      notes: newAppointment.value.notes
+    });
+    
+    // Refresh sessions after creating
+    await fetchCounsellorSessions();
+    
+    showNewAppointment.value = false;
+    newAppointment.value = {
+      clientId: '',
+      date: '',
+      time: '',
+      duration: '60',
+      type: 'individual',
+      notes: ''
+    };
+  } catch (err) {
+    console.error('Error creating appointment:', err);
+    alert('Failed to create appointment. Please try again or contact support if this feature is not yet available.');
+  }
 };
 
-onMounted(() => {
+onMounted(async () => {
   const today = new Date();
   const monday = new Date(today);
   monday.setDate(today.getDate() - today.getDay() + 1);
   currentWeekStart.value = monday;
+  
+  // Fetch counselor sessions from API
+  await fetchCounsellorSessions();
 });
 </script>
