@@ -90,7 +90,16 @@ export interface SessionResponse {
   is_counsellor_accepted: boolean;
   meeting_link?: string;
   created_at: string;
-  user: UserResponse;
+  user?: UserResponse | Partial<UserResponse> | {
+    id?: string;
+    user_id?: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+    country_code?: string;
+  };
   counsellor: CounsellorResponse;
 }
 
@@ -249,6 +258,11 @@ export const CounsellorService = {
 
   async acceptSession(sessionData: AcceptSessionRequest) {
     const response = await apiClient.post('/counsellor/sessions/accept', sessionData);
+    return response.data;
+  },
+
+  async getCounsellorPrograms() {
+    const response = await apiClient.get('/counsellor/programs/all');
     return response.data;
   }
 };
@@ -500,65 +514,175 @@ export const ProgramService = {
 };
 
 export const ResourceService = {
-  async getResources(params?: { category?: string; search?: string }) {
-    let resources = [
-      {
-        id: "1",
-        title: "Communication Skills Guide",
-        description: "A comprehensive guide to effective communication in relationships",
-        type: "PDF",
-        category: "Marriage Counseling",
-        size: "2.4 MB",
-        url: "/resources/1",
-        created_at: new Date().toISOString()
+  // Counsellor endpoints
+  async getCounsellorResources(params?: { category?: string; search?: string }) {
+    const response = await apiClient.get('/counsellor/resources/all', {
+      params: params
+    });
+    return response.data;
+  },
+
+  async getCounsellorResource(resourceId: string) {
+    const response = await apiClient.get(`/counsellor/resources/${resourceId}`);
+    return response.data;
+  },
+
+  async createCounsellorResource(formData: FormData) {
+    // Don't set Content-Type header - axios will set it automatically with boundary for FormData
+    const response = await apiClient.post('/counsellor/resources', formData, {
+      headers: {
+        'Content-Type': undefined // Remove default Content-Type to let axios set multipart/form-data with boundary
       },
-      {
-        id: "2",
-        title: "Parenting Strategies Workbook",
-        description: "Practical exercises for better parenting",
-        type: "PDF",
-        category: "Parenting",
-        size: "1.8 MB",
-        url: "/resources/2",
-        created_at: new Date().toISOString()
+      transformRequest: [(data) => data] // Prevent axios from transforming FormData
+    });
+    return response.data;
+  },
+
+  async updateCounsellorResource(resourceId: string, formData: FormData) {
+    // Don't set Content-Type header - axios will set it automatically with boundary for FormData
+    const response = await apiClient.put(`/counsellor/resources/${resourceId}`, formData, {
+      headers: {
+        'Content-Type': undefined // Remove default Content-Type to let axios set multipart/form-data with boundary
+      },
+      transformRequest: [(data) => data] // Prevent axios from transforming FormData
+    });
+    return response.data;
+  },
+
+  async deleteCounsellorResource(resourceId: string) {
+    const response = await apiClient.delete(`/counsellor/resources/${resourceId}`);
+    return response.data;
+  },
+
+  async downloadCounsellorResource(resourceId: string) {
+    // Try download endpoint first, fallback to resource endpoint if it doesn't exist
+    try {
+      const response = await apiClient.get(`/counsellor/resources/${resourceId}/download`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (err: any) {
+      // If download endpoint doesn't exist (404), try the resource endpoint
+      // The resource endpoint might return the file directly
+      if (err?.response?.status === 404) {
+        const response = await apiClient.get(`/counsellor/resources/${resourceId}`, {
+          responseType: 'blob'
+        });
+        // If response.data is a Blob, return it; otherwise check response.data.data
+        if (response.data instanceof Blob) {
+          return response.data;
+        }
+        // If the response is wrapped, try to extract the blob
+        if (response.data?.data instanceof Blob) {
+          return response.data.data;
+        }
+        throw new Error('Resource file not found in response');
       }
-    ];
-
-    if (params?.category) {
-      resources = resources.filter(r => r.category === params.category);
+      throw err;
     }
-    if (params?.search) {
-      const searchTerm = params.search.toLowerCase();
-      resources = resources.filter(r =>
-        r.title.toLowerCase().includes(searchTerm) ||
-        r.description?.toLowerCase().includes(searchTerm)
-      );
-    }
+  },
 
-    return { data: resources };
+  // User endpoints
+  async getUserResources(params?: { category?: string; search?: string }) {
+    const response = await apiClient.get('/users/resources/all', {
+      params: params
+    });
+    return response.data;
+  },
+
+  async getUserResource(resourceId: string) {
+    const response = await apiClient.get(`/users/resources/${resourceId}`);
+    // Handle different response structures
+    if (response.data) {
+      return response.data;
+    }
+    return response;
+  },
+
+  async downloadUserResource(filename: string) {
+    const response = await apiClient.get(`/users/resources/download/${filename}`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Legacy methods for backward compatibility
+  async getResources(params?: { category?: string; search?: string }) {
+    const userType = localStorage.getItem('userType');
+    if (userType === 'counsellor') {
+      return this.getCounsellorResources(params);
+    }
+    return this.getUserResources(params);
   },
 
   async downloadResource(id: string) {
-    return new Blob(['Mock file content for resource ' + id], { type: 'application/pdf' });
+    // For users, we need to get the resource first to get the filename
+    const userType = localStorage.getItem('userType');
+    if (userType === 'counsellor') {
+      return this.downloadCounsellorResource(id);
+    } else {
+      // Users use the download endpoint with filename
+      const resourceResponse = await this.getUserResource(id);
+      
+      // Handle different response structures to extract filename
+      let filename: string | undefined;
+      
+      // Extract resource data from response
+      let resourceData: any = resourceResponse;
+      if (resourceResponse?.data) {
+        resourceData = resourceResponse.data;
+      } else if (resourceResponse?.resource) {
+        resourceData = resourceResponse.resource;
+      }
+      
+      // Try different possible locations for filename
+      if (resourceData) {
+        // Priority 1: Direct filename field (most common)
+        filename = resourceData.filename || resourceData.file_name || resourceData.file;
+        
+        // Priority 2: Extract from url field
+        if (!filename && resourceData.url) {
+          // Extract filename from URL (e.g., "/resources/filename.pdf" or "filename.pdf")
+          const urlParts = resourceData.url.split('/');
+          const lastPart = urlParts[urlParts.length - 1];
+          // Remove query parameters if any
+          if (lastPart && lastPart !== '') {
+            filename = lastPart.split('?')[0];
+          }
+        }
+        
+        // Priority 3: Check if there's a file_path or storage_path
+        if (!filename && resourceData.file_path) {
+          const pathParts = resourceData.file_path.split('/');
+          filename = pathParts[pathParts.length - 1];
+        }
+        
+        if (!filename && resourceData.storage_path) {
+          const pathParts = resourceData.storage_path.split('/');
+          filename = pathParts[pathParts.length - 1];
+        }
+      }
+      
+      // If we still don't have a filename, log the resource structure for debugging
+      if (!filename) {
+        console.error('Could not extract filename from resource. Available fields:', {
+          resourceResponse,
+          resourceData,
+          resourceDataKeys: resourceData ? Object.keys(resourceData) : [],
+          id
+        });
+        throw new Error('Could not determine filename for resource download. Resource may not have a filename field.');
+      }
+      
+      // Ensure filename doesn't contain the full path
+      filename = filename.split('/').pop() || filename;
+      
+      return this.downloadUserResource(filename);
+    }
   },
 
   async uploadResource(formData: FormData) {
-    const title = formData.get('title') as string;
-    const category = formData.get('category') as string;
-
-    return {
-      success: true,
-      id: Date.now().toString(),
-      message: `Resource "${title}" uploaded successfully`,
-      data: {
-        id: Date.now().toString(),
-        title: title,
-        category: category,
-        type: "PDF",
-        size: "1.2 MB",
-        created_at: new Date().toISOString()
-      }
-    };
+    return this.createCounsellorResource(formData);
   }
 };
 
@@ -578,6 +702,7 @@ export interface Session {
   id: string;
   title?: string;
   description?: string;
+  topic?: string;
   start_time: string;
   end_time?: string;
   session_date: string;
@@ -593,6 +718,16 @@ export interface Session {
   notes?: string;
   feedback?: string;
   meeting_link?: string;
+  user?: {
+    id?: string;
+    user_id?: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+    country_code?: string;
+  };
 }
 
 export interface Program {

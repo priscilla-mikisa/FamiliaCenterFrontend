@@ -27,6 +27,7 @@ export interface Session {
   id: string;
   title: string;
   description?: string;
+  topic?: string;
   notes?: string;
   feedback?: string;
   start_time: string;
@@ -43,6 +44,16 @@ export interface Session {
   counsellor_name?: string;
   type?: string;
   status: string;
+  user?: {
+    id?: string;
+    user_id?: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+    country_code?: string;
+  };
 }
 
 export interface Program {

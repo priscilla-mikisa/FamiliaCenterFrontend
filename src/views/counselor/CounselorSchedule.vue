@@ -473,7 +473,7 @@ const scheduleAppointment = (dayIndex: number, hour: number) => {
 };
 
 type Appointment = {
-  id: number;
+  id: string | number;
   client: string;
   date: string;
   time: string;
@@ -482,13 +482,14 @@ type Appointment = {
   dayIndex: number;
   hour: number;
   canStart?: boolean;
+  status?: string;
 };
 
 const viewAppointment = (appointment: Appointment) => {
   console.log('Viewing appointment:', appointment);
 };
 
-const startSession = (appointmentId: number) => {
+const startSession = (appointmentId: string | number) => {
   // Find the appointment and navigate to join session
   const appointment = appointments.value.find(apt => apt.id === appointmentId);
   if (appointment) {

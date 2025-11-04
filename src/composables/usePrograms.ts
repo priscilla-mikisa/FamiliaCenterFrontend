@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import { ProgramService, type Program } from '@/services/apiService';
+import { ProgramService, CounsellorService, type Program } from '@/services/apiService';
 
 export const usePrograms = () => {
   const programs = ref<Program[]>([]);
@@ -27,6 +27,29 @@ export const usePrograms = () => {
     }
   };
 
+  const fetchCounsellorPrograms = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await CounsellorService.getCounsellorPrograms();
+      // Handle different response structures
+      if (Array.isArray(response)) {
+        programs.value = response;
+      } else if (response?.data) {
+        programs.value = Array.isArray(response.data) ? response.data : [response.data];
+      } else if (response?.programs) {
+        programs.value = Array.isArray(response.programs) ? response.programs : [response.programs];
+      } else {
+        programs.value = [];
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch counselor programs';
+      console.error('Error fetching counselor programs:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const enrollInProgram = async (programId: number) => {
     try {
       await ProgramService.enrollInProgram(programId);
@@ -48,6 +71,7 @@ export const usePrograms = () => {
     loading,
     error,
     fetchPrograms,
+    fetchCounsellorPrograms,
     enrollInProgram
   };
 };

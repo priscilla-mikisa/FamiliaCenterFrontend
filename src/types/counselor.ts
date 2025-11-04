@@ -153,7 +153,7 @@ export interface CounselorResource {
   id: string;
   title: string;
   description?: string;
-  type: 'PDF' | 'Video' | 'Audio' | 'Document';
+  type: 'PDF' | 'Video' | 'Audio' | 'Document' | 'Image';
   category: string;
   size: string;
   url: string;
