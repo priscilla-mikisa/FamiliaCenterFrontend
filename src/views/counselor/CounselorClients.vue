@@ -19,18 +19,46 @@
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
             <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
           </select>
-          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
-            <UserPlusIcon class="w-4 h-4 mr-2" />
-            Add Client
-          </button>
         </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Loading State -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="n in 6" :key="n" class="bg-white rounded-xl shadow p-6 animate-pulse">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+          <div class="flex-1">
+            <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="h-3 bg-gray-200 rounded"></div>
+          <div class="h-3 bg-gray-200 rounded"></div>
+          <div class="h-3 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="bg-white rounded-xl shadow p-6">
+      <div class="text-center py-8">
+        <p class="text-red-500 mb-4">{{ error }}</p>
+        <button
+          @click="fetchClients"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Clients Grid -->
+    <div v-else-if="filteredClients.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="client in filteredClients"
         :key="client.id"
@@ -44,7 +72,7 @@
               </div>
               <div>
                 <h3 class="font-medium text-gray-900">{{ client.name }}</h3>
-                <p class="text-sm text-gray-500">{{ client.type }}</p>
+                <p class="text-sm text-gray-500">{{ client.email }}</p>
               </div>
             </div>
             <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(client.status)}`">
@@ -54,38 +82,51 @@
 
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Program:</span>
-              <span class="font-medium">{{ client.program || 'Individual Sessions' }}</span>
+              <span class="text-gray-500">Total Sessions:</span>
+              <span class="font-medium">{{ client.totalSessions }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Sessions:</span>
-              <span class="font-medium">{{ client.sessionsCompleted }}/{{ client.totalSessions }}</span>
+              <span class="text-gray-500">Completed:</span>
+              <span class="font-medium">{{ client.completedSessions }}</span>
             </div>
             <div class="flex justify-between text-sm">
+              <span class="text-gray-500">Pending:</span>
+              <span class="font-medium">{{ client.pendingSessions }}</span>
+            </div>
+            <div v-if="client.nextSession" class="flex justify-between text-sm">
               <span class="text-gray-500">Next Session:</span>
-              <span class="font-medium">{{ client.nextSession || 'Not scheduled' }}</span>
+              <span class="font-medium">{{ formatDate(client.nextSession) }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Progress:</span>
-              <span class="font-medium">{{ client.progress }}%</span>
+            <div v-if="client.lastSession" class="flex justify-between text-sm">
+              <span class="text-gray-500">Last Session:</span>
+              <span class="font-medium">{{ formatDate(client.lastSession) }}</span>
             </div>
           </div>
 
-          <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div
-              class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              :style="{ width: `${client.progress}%` }"
-            ></div>
+          <div v-if="client.completedSessions > 0" class="mb-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+              <span>Progress</span>
+              <span>{{ Math.round((client.completedSessions / client.totalSessions) * 100) }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                :style="{ width: `${(client.completedSessions / client.totalSessions) * 100}%` }"
+              ></div>
+            </div>
           </div>
 
           <div class="flex space-x-2">
-            <button class="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button
+              @click="viewClientDetails(client)"
+              class="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
               View Details
             </button>
-            <button class="flex-1 px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-              Schedule
-            </button>
-            <button class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            <button
+              class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              title="Contact Client"
+            >
               <MessageCircleIcon class="w-4 h-4" />
             </button>
           </div>
@@ -93,9 +134,25 @@
       </div>
     </div>
 
-    <div v-if="selectedClient" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b">
+    <!-- Empty State -->
+    <div v-else class="bg-white rounded-xl shadow p-6">
+      <div class="text-center py-8">
+        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <UserIcon class="w-8 h-8 text-gray-400" />
+        </div>
+        <p class="text-gray-600">No clients found</p>
+        <p class="text-sm text-gray-500 mt-2">Clients will appear here once they book sessions with you</p>
+      </div>
+    </div>
+
+    <!-- Client Details Modal -->
+    <div
+      v-if="selectedClient"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      @click.self="selectedClient = null"
+    >
+      <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b sticky top-0 bg-white">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">{{ selectedClient.name }} - Client Details</h3>
             <button @click="selectedClient = null" class="p-1 hover:bg-gray-100 rounded">
@@ -105,58 +162,75 @@
         </div>
 
         <div class="p-6 space-y-6">
+          <!-- Client Info -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-500">Email</label>
               <p class="mt-1 text-sm text-gray-900">{{ selectedClient.email }}</p>
             </div>
-            <div>
+            <div v-if="selectedClient.phone">
               <label class="block text-sm font-medium text-gray-500">Phone</label>
-              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.phone || 'Not provided' }}</p>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.phone }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-500">Start Date</label>
-              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.startDate }}</p>
+              <label class="block text-sm font-medium text-gray-500">Total Sessions</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.totalSessions }}</p>
             </div>
             <div>
+              <label class="block text-sm font-medium text-gray-500">Completed</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.completedSessions }}</p>
+            </div>
+            <div v-if="selectedClient.lastSession">
               <label class="block text-sm font-medium text-gray-500">Last Session</label>
-              <p class="mt-1 text-sm text-gray-900">{{ selectedClient.lastSession || 'Never' }}</p>
+              <p class="mt-1 text-sm text-gray-900">{{ formatDate(selectedClient.lastSession) }}</p>
+            </div>
+            <div v-if="selectedClient.nextSession">
+              <label class="block text-sm font-medium text-gray-500">Next Session</label>
+              <p class="mt-1 text-sm text-gray-900">{{ formatDate(selectedClient.nextSession) }}</p>
             </div>
           </div>
 
+          <!-- Session History -->
           <div>
             <h4 class="font-medium text-gray-900 mb-3">Session History</h4>
-            <div class="space-y-2">
-              <div v-for="session in selectedClient.sessions" :key="session.id" class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                <div>
-                  <p class="text-sm font-medium">{{ session.date }}</p>
-                  <p class="text-xs text-gray-500">{{ session.type }}</p>
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+              <div
+                v-for="session in selectedClient.sessions"
+                :key="session.id"
+                class="flex justify-between items-start py-3 border-b border-gray-100 last:border-0"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-1">
+                    <p class="text-sm font-medium">{{ session.topic }}</p>
+                    <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(session.status)}`">
+                      {{ session.status }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    {{ formatDateTime(session.start_time) }} • {{ session.duration }} minutes
+                  </p>
+                  <p v-if="session.bio" class="text-xs text-gray-600 mt-1">{{ session.bio }}</p>
+                  <a
+                    v-if="session.meeting_link && session.status === 'confirmed'"
+                    :href="session.meeting_link"
+                    target="_blank"
+                    class="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                  >
+                    Join Meeting
+                  </a>
                 </div>
-                <span :class="`text-xs px-2 py-1 rounded ${session.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`">
-                  {{ session.status }}
-                </span>
               </div>
             </div>
-          </div>
-
-          <div>
-            <h4 class="font-medium text-gray-900 mb-3">Notes</h4>
-            <textarea
-              v-model="selectedClient.notes"
-              rows="4"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Add notes about this client..."
-            ></textarea>
           </div>
         </div>
 
         <div class="p-6 border-t bg-gray-50">
-          <div class="flex justify-end space-x-3">
-            <button @click="selectedClient = null" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100">
+          <div class="flex justify-end">
+            <button
+              @click="selectedClient = null"
+              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+            >
               Close
-            </button>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Save Notes
             </button>
           </div>
         </div>
@@ -166,112 +240,163 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   SearchIcon,
-  UserPlusIcon,
   UserIcon,
   MessageCircleIcon,
   XIcon
 } from 'lucide-vue-next';
+import { CounsellorService } from '@/services/apiService';
+
+interface Session {
+  id: string;
+  user_id: string;
+  counsellor_id: string;
+  start_time: string;
+  duration: number;
+  topic: string;
+  bio?: string;
+  status: string;
+  is_counsellor_accepted: boolean;
+  meeting_link?: string;
+  created_at: string;
+  user?: {
+    id?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+    country_code?: string;
+  };
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  totalSessions: number;
+  completedSessions: number;
+  pendingSessions: number;
+  nextSession?: string;
+  lastSession?: string;
+  sessions: Session[];
+}
 
 const searchQuery = ref('');
 const filterStatus = ref('');
-type Client = {
-  id: number;
-  name: string;
-  type: string;
-  email: string;
-  phone: string | null;
-  status: string;
-  program: string | null;
-  sessionsCompleted: number;
-  totalSessions: number;
-  progress: number;
-  nextSession: string | null;
-  startDate: string;
-  lastSession: string | null;
-  sessions: Array<{
-    id: number;
-    date: string;
-    type: string;
-    status: string;
-  }>;
-  notes: string;
-};
-
+const loading = ref(true);
+const error = ref<string | null>(null);
 const selectedClient = ref<Client | null>(null);
+const clients = ref<Client[]>([]);
 
-const clients = ref([
-  {
-    id: 1,
-    name: 'John & Mary Smith',
-    type: 'Couple',
-    email: 'john.smith@email.com',
-    phone: '+1 (555) 123-4567',
-    status: 'active',
-    program: 'Marriage Restoration',
-    sessionsCompleted: 4,
-    totalSessions: 6,
-    progress: 67,
-    nextSession: 'Today 2:00 PM',
-    startDate: '2024-01-15',
-    lastSession: '2024-01-22',
-    sessions: [
-      { id: 1, date: '2024-01-22', type: 'Couples Session', status: 'completed' },
-      { id: 2, date: '2024-01-15', type: 'Initial Consultation', status: 'completed' }
-    ],
-    notes: 'Making good progress on communication. Focus on conflict resolution next session.'
-  },
-  {
-    id: 2,
-    name: 'Jennifer Wilson',
-    type: 'Individual',
-    email: 'jennifer.w@email.com',
-    phone: '+1 (555) 987-6543',
-    status: 'active',
-    program: null,
-    sessionsCompleted: 2,
-    totalSessions: 8,
-    progress: 25,
-    nextSession: 'Tomorrow 10:00 AM',
-    startDate: '2024-01-20',
-    lastSession: '2024-01-21',
-    sessions: [
-      { id: 3, date: '2024-01-21', type: 'Individual Session', status: 'completed' },
-      { id: 4, date: '2024-01-20', type: 'Initial Assessment', status: 'completed' }
-    ],
-    notes: 'Dealing with workplace stress. Recommended mindfulness exercises.'
-  },
-  {
-    id: 3,
-    name: 'The Johnson Family',
-    type: 'Family',
-    email: 'johnson.family@email.com',
-    phone: '+1 (555) 456-7890',
-    status: 'completed',
-    program: 'Parenting Program',
-    sessionsCompleted: 6,
-    totalSessions: 6,
-    progress: 100,
-    nextSession: null,
-    startDate: '2023-12-01',
-    lastSession: '2024-01-10',
-    sessions: [
-      { id: 5, date: '2024-01-10', type: 'Family Session', status: 'completed' },
-      { id: 6, date: '2024-01-03', type: 'Family Session', status: 'completed' }
-    ],
-    notes: 'Successfully completed parenting program. Family dynamics much improved.'
+const fetchClients = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    // Fetch all counsellor sessions
+    const response = await CounsellorService.getCounsellorSessions();
+    const sessions: Session[] = response.data || [];
+
+    // Group sessions by user to create client records
+    const clientsMap = new Map<string, Client>();
+
+    sessions.forEach((session) => {
+      const userId = session.user_id;
+      const user = session.user;
+
+      if (!userId || !user) return;
+
+      if (!clientsMap.has(userId)) {
+        // Create new client record
+        const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Unknown Client';
+
+        clientsMap.set(userId, {
+          id: userId,
+          name,
+          email: user.email || 'No email',
+          phone: user.phone_number ? `${user.country_code || ''} ${user.phone_number}` : undefined,
+          status: 'active',
+          totalSessions: 0,
+          completedSessions: 0,
+          pendingSessions: 0,
+          sessions: [],
+        });
+      }
+
+      const client = clientsMap.get(userId)!;
+      client.sessions.push(session);
+      client.totalSessions++;
+
+      // Count sessions by status
+      if (session.status === 'completed') {
+        client.completedSessions++;
+      } else if (session.status === 'pending' || session.status === 'confirmed') {
+        client.pendingSessions++;
+      }
+
+      // Find next and last sessions
+      const sessionTime = new Date(session.start_time);
+      const now = new Date();
+
+      if (sessionTime > now) {
+        // Future session - check if it's the nearest
+        if (!client.nextSession || sessionTime < new Date(client.nextSession)) {
+          client.nextSession = session.start_time;
+        }
+      } else {
+        // Past session - check if it's the most recent
+        if (!client.lastSession || sessionTime > new Date(client.lastSession)) {
+          client.lastSession = session.start_time;
+        }
+      }
+    });
+
+    // Convert map to array and determine status
+    clients.value = Array.from(clientsMap.values()).map(client => {
+      // Sort sessions by date (newest first)
+      client.sessions.sort((a, b) =>
+        new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+      );
+
+      // Determine client status
+      if (client.completedSessions === client.totalSessions && client.totalSessions > 0) {
+        client.status = 'completed';
+      } else if (client.pendingSessions > 0) {
+        client.status = 'active';
+      } else {
+        client.status = 'pending';
+      }
+
+      return client;
+    });
+
+    // Sort clients by last activity
+    clients.value.sort((a, b) => {
+      const aTime = a.lastSession || a.nextSession || '0';
+      const bTime = b.lastSession || b.nextSession || '0';
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
+
+  } catch (err: any) {
+    console.error('Error fetching clients:', err);
+    error.value = err.message || 'Failed to load clients';
+  } finally {
+    loading.value = false;
   }
-]);
+};
 
 const filteredClients = computed(() => {
   let filtered = clients.value;
 
   if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(client =>
-      client.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+      client.name.toLowerCase().includes(query) ||
+      client.email.toLowerCase().includes(query)
     );
   }
 
@@ -282,12 +407,61 @@ const filteredClients = computed(() => {
   return filtered;
 });
 
+const viewClientDetails = (client: Client) => {
+  selectedClient.value = client;
+};
+
 const getStatusClass = (status: string) => {
   const classes = {
     active: 'bg-green-100 text-green-800',
-    inactive: 'bg-gray-100 text-gray-800',
+    pending: 'bg-yellow-100 text-yellow-800',
     completed: 'bg-blue-100 text-blue-800'
   };
   return classes[status as keyof typeof classes] || classes.active;
 };
+
+const getSessionStatusClass = (status: string) => {
+  const classes = {
+    completed: 'bg-green-100 text-green-800',
+    confirmed: 'bg-blue-100 text-blue-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    cancelled: 'bg-red-100 text-red-800'
+  };
+  return classes[status as keyof typeof classes] || classes.pending;
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = date.getTime() - now.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days === -1) return 'Yesterday';
+  if (days > 0 && days < 7) return `In ${days} days`;
+  if (days < 0 && days > -7) return `${Math.abs(days)} days ago`;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  });
+};
+
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+onMounted(() => {
+  fetchClients();
+});
 </script>

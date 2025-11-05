@@ -70,9 +70,9 @@
               >
                 <DownloadIcon class="w-5 h-5 text-gray-600" />
               </button>
-              <button 
+              <button
                 @click.stop="viewResourceDetails(resource)"
-                class="p-2 rounded-lg hover:bg-gray-100" 
+                class="p-2 rounded-lg hover:bg-gray-100"
                 title="View Details"
               >
                 <FileTextIcon class="w-5 h-5 text-gray-600" />
@@ -135,7 +135,7 @@
               <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mx-auto mb-4"></div>
               <p class="text-gray-600">Loading preview...</p>
             </div>
-            
+
             <div v-else-if="isPdfType(selectedResource.type) && resourcePreviewUrl" class="w-full" style="height: 70vh;">
               <iframe
                 :src="resourcePreviewUrl"
@@ -143,7 +143,7 @@
                 title="PDF Viewer"
               ></iframe>
             </div>
-            
+
             <div v-else-if="isVideoType(selectedResource.type) && resourcePreviewUrl" class="w-full bg-black flex items-center justify-center" style="max-height: 70vh;">
               <video
                 :src="resourcePreviewUrl"
@@ -153,7 +153,7 @@
                 Your browser does not support the video tag.
               </video>
             </div>
-            
+
             <div v-else-if="isAudioType(selectedResource.type) && resourcePreviewUrl" class="p-6 bg-gray-50">
               <div class="flex items-center justify-center mb-4">
                 <div :class="`w-24 h-24 rounded-full flex items-center justify-center ${getResourceTypeClass(selectedResource.type)}`">
@@ -168,7 +168,7 @@
                 Your browser does not support the audio tag.
               </audio>
             </div>
-            
+
             <div v-else-if="isImageType(selectedResource.type) && resourcePreviewUrl" class="p-6 bg-gray-50 flex items-center justify-center">
               <img
                 :src="resourcePreviewUrl"
@@ -176,7 +176,7 @@
                 class="max-w-full max-h-[60vh] sm:max-h-[70vh] object-contain rounded-lg shadow-lg"
               />
             </div>
-            
+
             <div v-else-if="(isPdfType(selectedResource.type) || isVideoType(selectedResource.type) || isAudioType(selectedResource.type) || isImageType(selectedResource.type)) && !resourcePreviewUrl && !loadingPreview" class="p-12 text-center">
               <div class="text-red-500 mb-4">
                 <p class="font-medium">Failed to load preview</p>
@@ -190,7 +190,7 @@
                 Download
               </button>
             </div>
-            
+
             <div v-else class="p-12 text-center">
               <div :class="`w-24 h-24 rounded-lg mx-auto mb-4 flex items-center justify-center ${getResourceTypeClass(selectedResource.type)}`">
                 <component :is="getResourceIcon(selectedResource.type)" class="w-12 h-12" />
@@ -234,13 +234,11 @@ import { ref, computed, onMounted } from 'vue';
 import {
   SearchIcon,
   DownloadIcon,
-  MoreVerticalIcon,
   FileTextIcon,
   FileIcon,
   PlayIcon,
   ImageIcon,
   XIcon,
-  VideoIcon
 } from 'lucide-vue-next';
 import { useResources } from '@/composables/useResources';
 
@@ -350,7 +348,7 @@ const downloadResource = async (resource: Resource) => {
 const viewResourceDetails = async (resource: Resource) => {
   selectedResource.value = resource;
   showResourceModal.value = true;
-  
+
   // Load preview URL for viewable resources (PDF, Video, Audio, Image)
   if (isPdfType(resource.type) || isVideoType(resource.type) || isAudioType(resource.type) || isImageType(resource.type)) {
     await loadResourcePreview(resource);
@@ -365,15 +363,15 @@ const loadResourcePreview = async (resource: Resource) => {
       URL.revokeObjectURL(resourcePreviewUrl.value);
       resourcePreviewUrl.value = null;
     }
-    
+
     // Fetch the resource file with authentication
     const blob = await getResourceBlob(resource.id);
-    
+
     // Verify it's a Blob before creating URL
     if (!(blob instanceof Blob)) {
       throw new Error('Invalid response: expected Blob object');
     }
-    
+
     // Create a blob URL for preview
     resourcePreviewUrl.value = URL.createObjectURL(blob);
   } catch (err) {

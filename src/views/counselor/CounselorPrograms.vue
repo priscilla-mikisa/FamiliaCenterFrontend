@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-6">
+    <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
         <h2 class="text-xl font-semibold text-gray-900">Program Management</h2>
@@ -13,7 +14,30 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Loading state -->
+    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-for="n in 4" :key="n" class="bg-white rounded-xl shadow p-6 animate-pulse">
+        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="bg-white rounded-xl shadow p-6">
+      <div class="text-red-500 text-center py-8">
+        <p class="mb-4">Error: {{ error }}</p>
+        <button
+          @click="fetchPrograms"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Programs grid -->
+    <div v-else-if="programs.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div
         v-for="program in programs"
         :key="program.id"
@@ -22,43 +46,42 @@
         <div class="p-6">
           <div class="flex items-start justify-between mb-4">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ program.title }}</h3>
-              <p class="text-sm text-gray-600 mt-1">{{ program.description }}</p>
+              <h3 class="text-lg font-semibold text-gray-900">{{ program.name }}</h3>
+              <p class="text-sm text-gray-600 mt-1">{{ program.bio }}</p>
             </div>
-            <span :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getProgramStatusClass(program.status)}`">
-              {{ program.status }}
+            <span
+              :class="`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                program.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+              }`"
+            >
+              {{ program.is_active ? 'Active' : 'Inactive' }}
             </span>
           </div>
 
           <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <span class="text-gray-500">Duration:</span>
-              <span class="font-medium ml-1">{{ program.weeks }} weeks</span>
+              <span class="text-gray-500">Topic:</span>
+              <span class="font-medium ml-1">{{ program.topic }}</span>
             </div>
             <div>
-              <span class="text-gray-500">Participants:</span>
-              <span class="font-medium ml-1">{{ program.enrolled }}/{{ program.capacity }}</span>
+              <span class="text-gray-500">Type:</span>
+              <span class="font-medium ml-1 capitalize">{{ program.program_type }}</span>
             </div>
             <div>
               <span class="text-gray-500">Sessions:</span>
-              <span class="font-medium ml-1">{{ program.sessions }} total</span>
+              <span class="font-medium ml-1">{{ program.sub_programs?.length || 0 }} total</span>
             </div>
             <div>
-              <span class="text-gray-500">Resources:</span>
-              <span class="font-medium ml-1">{{ program.resources }} files</span>
+              <span class="text-gray-500">Counsellors:</span>
+              <span class="font-medium ml-1">{{ program.counsellor_ids?.length || 0 }}</span>
             </div>
           </div>
 
-          <div class="mb-4">
-            <div class="flex justify-between text-sm text-gray-600 mb-1">
-              <span>Program Progress</span>
-              <span>{{ program.progress }}%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div
-                class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                :style="{ width: `${program.progress}%` }"
-              ></div>
+          <!-- Date range -->
+          <div class="mb-4 text-sm text-gray-600">
+            <div class="flex items-center">
+              <CalendarIcon class="w-4 h-4 mr-1" />
+              <span>{{ formatDate(program.start_time) }} - {{ formatDate(program.end_date) }}</span>
             </div>
           </div>
 
@@ -70,24 +93,163 @@
               Manage
             </button>
             <button
-              @click="viewParticipants(program)"
+              @click="editProgram(program)"
               class="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
             >
-              Participants
+              Edit
             </button>
-            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <MoreVerticalIcon class="w-4 h-4" />
+            <button
+              @click="confirmDelete(program)"
+              class="px-3 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50"
+            >
+              <TrashIcon class="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="selectedProgram" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <!-- Empty state -->
+    <div v-else class="bg-white rounded-xl shadow p-6">
+      <div class="text-center py-8">
+        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <BookOpenIcon class="w-8 h-8 text-gray-400" />
+        </div>
+        <p class="text-gray-600 mb-4">No programs created yet</p>
+        <button
+          @click="showCreateProgram = true"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Create Your First Program
+        </button>
+      </div>
+    </div>
+
+    <!-- Create/Edit Program Modal -->
+    <div
+      v-if="showCreateProgram || editingProgram"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      @click.self="closeModal"
+    >
+      <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">
+              {{ editingProgram ? 'Edit Program' : 'Create New Program' }}
+            </h3>
+            <button @click="closeModal" class="p-1 hover:bg-gray-100 rounded">
+              <XIcon class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <form @submit.prevent="saveProgram" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Program Name</label>
+            <input
+              v-model="programForm.name"
+              type="text"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+            <input
+              v-model="programForm.topic"
+              type="text"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              v-model="programForm.bio"
+              rows="3"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input
+                v-model="programForm.start_date"
+                type="date"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <input
+                v-model="programForm.end_date"
+                type="date"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Program Type</label>
+            <select
+              v-model="programForm.program_type"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2"
+            >
+              <option value="individual">Individual</option>
+              <option value="group">Group</option>
+              <option value="workshop">Workshop</option>
+              <option value="course">Course</option>
+            </select>
+          </div>
+
+          <div v-if="editingProgram">
+            <label class="flex items-center">
+              <input
+                v-model="programForm.is_active"
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+              />
+              <span class="text-sm font-medium text-gray-700">Active</span>
+            </label>
+          </div>
+
+          <div class="flex space-x-3 pt-4">
+            <button
+              type="button"
+              @click="closeModal"
+              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="saving"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {{ saving ? 'Saving...' : (editingProgram ? 'Update Program' : 'Create Program') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Program Details Modal -->
+    <div
+      v-if="selectedProgram"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      @click.self="selectedProgram = null"
+    >
       <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b">
           <div class="flex items-center justify-between">
-            <h3 class="text-xl font-semibold">{{ selectedProgram.title }}</h3>
+            <h3 class="text-xl font-semibold">{{ selectedProgram.name }}</h3>
             <button @click="selectedProgram = null" class="p-1 hover:bg-gray-100 rounded">
               <XIcon class="w-6 h-6" />
             </button>
@@ -98,109 +260,94 @@
           <div class="border-b border-gray-200 mb-6">
             <nav class="-mb-px flex space-x-8">
               <button
-                v-for="tab in programTabs"
-                :key="tab.id"
-                @click="activeTab = tab.id"
-                :class="`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
+                v-for="tab in ['overview', 'sessions']"
+                :key="tab"
+                @click="activeTab = tab"
+                :class="`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
+                  activeTab === tab
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`"
               >
-                {{ tab.label }}
+                {{ tab }}
               </button>
             </nav>
           </div>
 
+          <!-- Overview Tab -->
           <div v-if="activeTab === 'overview'" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="bg-gray-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-blue-600">{{ selectedProgram.enrolled }}</div>
-                <div class="text-sm text-gray-600">Enrolled Participants</div>
-              </div>
-              <div class="bg-gray-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-green-600">{{ selectedProgram.completed }}</div>
-                <div class="text-sm text-gray-600">Completed Sessions</div>
-              </div>
-              <div class="bg-gray-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-purple-600">{{ selectedProgram.avgProgress }}%</div>
-                <div class="text-sm text-gray-600">Average Progress</div>
-              </div>
+            <div>
+              <h4 class="font-medium text-gray-900 mb-2">Description</h4>
+              <p class="text-gray-700">{{ selectedProgram.bio }}</p>
             </div>
 
-            <div>
-              <h4 class="font-medium text-gray-900 mb-3">Program Description</h4>
-              <p class="text-gray-700">{{ selectedProgram.fullDescription }}</p>
-            </div>
-
-            <div>
-              <h4 class="font-medium text-gray-900 mb-3">Learning Objectives</h4>
-              <ul class="space-y-2">
-                <li v-for="objective in selectedProgram.objectives" :key="objective" class="flex items-start">
-                  <CheckIcon class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span class="text-gray-700">{{ objective }}</span>
-                </li>
-              </ul>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="text-sm text-gray-600">Topic</div>
+                <div class="font-medium text-gray-900">{{ selectedProgram.topic }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="text-sm text-gray-600">Type</div>
+                <div class="font-medium text-gray-900 capitalize">{{ selectedProgram.program_type }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="text-sm text-gray-600">Start Date</div>
+                <div class="font-medium text-gray-900">{{ formatDate(selectedProgram.start_time) }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="text-sm text-gray-600">End Date</div>
+                <div class="font-medium text-gray-900">{{ formatDate(selectedProgram.end_date) }}</div>
+              </div>
             </div>
           </div>
 
+          <!-- Sessions Tab -->
           <div v-if="activeTab === 'sessions'" class="space-y-4">
             <div class="flex justify-between items-center">
-              <h4 class="font-medium text-gray-900">Session Schedule</h4>
-              <button class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+              <h4 class="font-medium text-gray-900">Program Sessions</h4>
+              <button
+                @click="showAddSession = true"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              >
                 Add Session
               </button>
             </div>
-            <div class="space-y-3">
+
+            <div v-if="selectedProgram.sub_programs && selectedProgram.sub_programs.length > 0" class="space-y-3">
               <div
-                v-for="session in selectedProgram.programSessions"
+                v-for="(session, index) in selectedProgram.sub_programs"
                 :key="session.id"
                 class="border border-gray-200 rounded-lg p-4"
               >
                 <div class="flex justify-between items-start">
-                  <div>
-                    <h5 class="font-medium text-gray-900">Week {{ session.week }}: {{ session.title }}</h5>
-                    <p class="text-sm text-gray-600 mt-1">{{ session.description }}</p>
-                    <div class="flex items-center mt-2 text-sm text-gray-500">
-                      <CalendarIcon class="w-4 h-4 mr-1" />
-                      {{ session.date }} at {{ session.time }}
-                    </div>
-                  </div>
-                  <span :class="`text-xs px-2 py-1 rounded ${getSessionStatusClass(session.status)}`">
-                    {{ session.status }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="activeTab === 'resources'" class="space-y-4">
-            <div class="flex justify-between items-center">
-              <h4 class="font-medium text-gray-900">Program Resources</h4>
-              <button class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                Upload Resource
-              </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div
-                v-for="resource in selectedProgram.programResources"
-                :key="resource.id"
-                class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
-              >
-                <div class="flex items-start">
-                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                    <FileTextIcon class="w-5 h-5 text-blue-600" />
-                  </div>
                   <div class="flex-1">
-                    <h5 class="font-medium text-gray-900">{{ resource.title }}</h5>
-                    <p class="text-sm text-gray-600">{{ resource.type }} • {{ resource.size }}</p>
-                    <div class="flex space-x-2 mt-2">
-                      <button class="text-xs text-blue-600 hover:underline">Download</button>
-                      <button class="text-xs text-gray-500 hover:underline">Edit</button>
+                    <h5 class="font-medium text-gray-900">Session {{ index + 1 }}: {{ session.name }}</h5>
+                    <p class="text-sm text-gray-600 mt-1">{{ session.bio }}</p>
+                    <div class="flex items-center mt-2 text-sm text-gray-500">
+                      <ClockIcon class="w-4 h-4 mr-1" />
+                      {{ session.duration }} minutes
+                    </div>
+                    <div v-if="session.meeting_link" class="mt-2">
+                      <a
+                        :href="session.meeting_link"
+                        target="_blank"
+                        class="text-sm text-blue-600 hover:underline"
+                      >
+                        Meeting Link
+                      </a>
                     </div>
                   </div>
+                  <button
+                    @click="deleteSubProgram(session.id)"
+                    class="ml-4 p-2 text-red-600 hover:bg-red-50 rounded"
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
+            </div>
+            <div v-else class="text-center py-8 text-gray-500">
+              No sessions added yet
             </div>
           </div>
         </div>
@@ -213,96 +360,74 @@
             >
               Close
             </button>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Save Changes
-            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="showCreateProgram" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div class="bg-white rounded-xl max-w-2xl w-full">
+    <!-- Add Session Modal -->
+    <div
+      v-if="showAddSession && selectedProgram"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+      @click.self="showAddSession = false"
+    >
+      <div class="bg-white rounded-xl max-w-lg w-full">
         <div class="p-6 border-b">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">Create New Program</h3>
-            <button @click="showCreateProgram = false" class="p-1 hover:bg-gray-100 rounded">
+            <h3 class="text-lg font-semibold">Add Session</h3>
+            <button @click="showAddSession = false" class="p-1 hover:bg-gray-100 rounded">
               <XIcon class="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <form @submit.prevent="createProgram" class="p-6 space-y-4">
+        <form @submit.prevent="saveSession" class="p-6 space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Program Title</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Session Name</label>
             <input
-              v-model="newProgram.title"
+              v-model="sessionForm.name"
               type="text"
               required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2"
             />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
-              v-model="newProgram.description"
+              v-model="sessionForm.bio"
               rows="3"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2"
             ></textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Duration (weeks)</label>
-              <input
-                v-model="newProgram.weeks"
-                type="number"
-                min="1"
-                max="52"
-                required
-                class="w-full border border-gray-300 rounded-lg px-3 py-2"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-              <input
-                v-model="newProgram.capacity"
-                type="number"
-                min="1"
-                required
-                class="w-full border border-gray-300 rounded-lg px-3 py-2"
-              />
-            </div>
-          </div>
-
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              v-model="newProgram.category"
+            <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+            <input
+              v-model.number="sessionForm.duration"
+              type="number"
+              min="15"
+              max="240"
+              required
               class="w-full border border-gray-300 rounded-lg px-3 py-2"
-            >
-              <option value="marriage">Marriage Counseling</option>
-              <option value="family">Family Therapy</option>
-              <option value="parenting">Parenting</option>
-              <option value="addiction">Addiction Recovery</option>
-              <option value="stress">Stress Management</option>
-            </select>
+            />
           </div>
 
           <div class="flex space-x-3 pt-4">
             <button
               type="button"
-              @click="showCreateProgram = false"
+              @click="showAddSession = false"
               class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              :disabled="saving"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              Create Program
+              {{ saving ? 'Adding...' : 'Add Session' }}
             </button>
           </div>
         </form>
@@ -312,160 +437,196 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import {
   PlusIcon,
-  MoreVerticalIcon,
   XIcon,
-  CheckIcon,
   CalendarIcon,
-  FileTextIcon
+  BookOpenIcon,
+  ClockIcon,
+  TrashIcon
 } from 'lucide-vue-next';
+import { ProgramService, type ProgramResponse, type CreateProgramRequest, type UpdateProgramRequest } from '@/services/apiService';
+
+const programs = ref<ProgramResponse[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
+const saving = ref(false);
 
 const showCreateProgram = ref(false);
-const selectedProgram = ref<Program | null>(null);
+const editingProgram = ref<ProgramResponse | null>(null);
+const selectedProgram = ref<ProgramResponse | null>(null);
+const showAddSession = ref(false);
 const activeTab = ref('overview');
 
-const newProgram = ref({
-  title: '',
-  description: '',
-  weeks: 6,
-  capacity: 20,
-  category: 'marriage'
+const programForm = ref({
+  name: '',
+  topic: '',
+  bio: '',
+  start_date: '',
+  end_date: '',
+  program_type: 'group',
+  is_active: true
 });
 
-const programTabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'sessions', label: 'Sessions' },
-  { id: 'resources', label: 'Resources' }
-];
+const sessionForm = ref({
+  name: '',
+  bio: '',
+  duration: 60
+});
 
-const programs = ref([
-  {
-    id: 1,
-    title: 'Marriage Restoration Program',
-    description: '6-week intensive program for couples seeking to rebuild their relationship',
-    weeks: 6,
-    enrolled: 12,
-    capacity: 15,
-    sessions: 6,
-    resources: 24,
-    progress: 67,
-    status: 'active',
-    completed: 4,
-    avgProgress: 72,
-    fullDescription: 'A comprehensive 6-week program designed to help couples rebuild trust, improve communication, and strengthen their relationship foundation through evidence-based therapeutic techniques.',
-    objectives: [
-      'Develop effective communication skills',
-      'Learn conflict resolution strategies',
-      'Rebuild trust and intimacy',
-      'Create healthy relationship boundaries',
-      'Establish long-term relationship goals'
-    ],
-    programSessions: [
-      { id: 1, week: 1, title: 'Foundation Building', description: 'Understanding relationship dynamics', date: '2024-01-15', time: '18:00', status: 'completed' },
-      { id: 2, week: 2, title: 'Communication Skills', description: 'Active listening and expression', date: '2024-01-22', time: '18:00', status: 'completed' },
-      { id: 3, week: 3, title: 'Conflict Resolution', description: 'Managing disagreements constructively', date: '2024-01-29', time: '18:00', status: 'scheduled' }
-    ],
-    programResources: [
-      { id: 1, title: 'Communication Workbook', type: 'PDF', size: '2.4 MB' },
-      { id: 2, title: 'Conflict Resolution Guide', type: 'PDF', size: '1.8 MB' },
-      { id: 3, title: 'Daily Exercises Audio', type: 'MP3', size: '45.2 MB' }
-    ]
-  },
-  {
-    id: 2,
-    title: 'Parenting Program',
-    description: '4-week program for effective parenting strategies',
-    weeks: 4,
-    enrolled: 8,
-    capacity: 12,
-    sessions: 4,
-    resources: 16,
-    progress: 25,
-    status: 'active',
-    completed: 1,
-    avgProgress: 31,
-    fullDescription: 'Learn evidence-based parenting techniques to build stronger relationships with your children.',
-    objectives: [
-      'Understand child development stages',
-      'Learn positive discipline techniques',
-      'Improve parent-child communication'
-    ],
-    programSessions: [],
-    programResources: []
+const fetchPrograms = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+    const response = await ProgramService.getCounsellorPrograms();
+    programs.value = response.data || [];
+  } catch (err: any) {
+    console.error('Error fetching programs:', err);
+    error.value = err.message || 'Failed to load programs';
+  } finally {
+    loading.value = false;
   }
-]);
+};
 
-const getProgramStatusClass = (status: string) => {
-  const classes = {
-    active: 'bg-green-100 text-green-800',
-    draft: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-blue-100 text-blue-800',
-    archived: 'bg-gray-100 text-gray-800'
+const viewProgram = async (program: ProgramResponse) => {
+  try {
+    // Fetch full program details with sub-programs
+    const response = await ProgramService.getCounsellorProgram(program.id);
+    selectedProgram.value = response.data || program;
+    activeTab.value = 'overview';
+  } catch (err) {
+    console.error('Error fetching program details:', err);
+    selectedProgram.value = program;
+  }
+};
+
+const editProgram = (program: ProgramResponse) => {
+  editingProgram.value = program;
+  programForm.value = {
+    name: program.name,
+    topic: program.topic,
+    bio: program.bio,
+    start_date: program.start_time.split('T')[0],
+    end_date: program.end_date.split('T')[0],
+    program_type: program.program_type,
+    is_active: program.is_active
   };
-  return classes[status as keyof typeof classes] || classes.draft;
 };
 
-const getSessionStatusClass = (status: string) => {
-  const classes = {
-    completed: 'bg-green-100 text-green-800',
-    scheduled: 'bg-blue-100 text-blue-800',
-    cancelled: 'bg-red-100 text-red-800'
-  };
-  return classes[status as keyof typeof classes] || classes.scheduled;
-};
-
-interface Program {
-  id: number;
-  title: string;
-  description: string;
-  weeks: number;
-  enrolled: number;
-  capacity: number;
-  sessions: number;
-  resources: number;
-  progress: number;
-  status: string;
-  completed: number;
-  avgProgress: number;
-  fullDescription: string;
-  objectives: string[];
-  programSessions: Array<{
-    id: number;
-    week: number;
-    title: string;
-    description: string;
-    date: string;
-    time: string;
-    status: string;
-  }>;
-  programResources: Array<{
-    id: number;
-    title: string;
-    type: string;
-    size: string;
-  }>;
-}
-
-const viewProgram = (program: Program) => {
-  selectedProgram.value = program;
-  activeTab.value = 'overview';
-};
-
-const viewParticipants = (program: Program) => {
-  console.log('Viewing participants for:', program.title);
-};
-
-const createProgram = () => {
-  console.log('Creating program:', newProgram.value);
+const closeModal = () => {
   showCreateProgram.value = false;
-  newProgram.value = {
-    title: '',
-    description: '',
-    weeks: 6,
-    capacity: 20,
-    category: 'marriage'
+  editingProgram.value = null;
+  programForm.value = {
+    name: '',
+    topic: '',
+    bio: '',
+    start_date: '',
+    end_date: '',
+    program_type: 'group',
+    is_active: true
   };
 };
+
+const saveProgram = async () => {
+  try {
+    saving.value = true;
+
+    const data: CreateProgramRequest | UpdateProgramRequest = {
+      name: programForm.value.name,
+      topic: programForm.value.topic,
+      bio: programForm.value.bio,
+      start_time: new Date(programForm.value.start_date).toISOString(),
+      end_date: new Date(programForm.value.end_date).toISOString(),
+      program_type: programForm.value.program_type
+    };
+
+    if (editingProgram.value) {
+      // Update existing program
+      await ProgramService.updateProgram(editingProgram.value.id, {
+        ...data,
+        is_active: programForm.value.is_active
+      });
+    } else {
+      // Create new program
+      await ProgramService.createProgram(data as CreateProgramRequest);
+    }
+
+    await fetchPrograms();
+    closeModal();
+  } catch (err: any) {
+    console.error('Error saving program:', err);
+    alert(err.message || 'Failed to save program');
+  } finally {
+    saving.value = false;
+  }
+};
+
+const confirmDelete = async (program: ProgramResponse) => {
+  if (confirm(`Are you sure you want to delete "${program.name}"?`)) {
+    try {
+      await ProgramService.deleteProgram(program.id);
+      await fetchPrograms();
+    } catch (err: any) {
+      console.error('Error deleting program:', err);
+      alert(err.message || 'Failed to delete program');
+    }
+  }
+};
+
+const saveSession = async () => {
+  if (!selectedProgram.value) return;
+
+  try {
+    saving.value = true;
+    await ProgramService.createSubProgram({
+      program_id: selectedProgram.value.id,
+      name: sessionForm.value.name,
+      bio: sessionForm.value.bio,
+      duration: sessionForm.value.duration
+    });
+
+    // Refresh program details
+    const response = await ProgramService.getCounsellorProgram(selectedProgram.value.id);
+    selectedProgram.value = response.data;
+
+    showAddSession.value = false;
+    sessionForm.value = { name: '', bio: '', duration: 60 };
+  } catch (err: any) {
+    console.error('Error creating session:', err);
+    alert(err.message || 'Failed to create session');
+  } finally {
+    saving.value = false;
+  }
+};
+
+const deleteSubProgram = async (subProgramId: string) => {
+  if (!confirm('Are you sure you want to delete this session?')) return;
+
+  try {
+    await ProgramService.deleteSubProgram(subProgramId);
+
+    // Refresh program details
+    if (selectedProgram.value) {
+      const response = await ProgramService.getCounsellorProgram(selectedProgram.value.id);
+      selectedProgram.value = response.data;
+    }
+  } catch (err: any) {
+    console.error('Error deleting session:', err);
+    alert(err.message || 'Failed to delete session');
+  }
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+onMounted(() => {
+  fetchPrograms();
+});
 </script>

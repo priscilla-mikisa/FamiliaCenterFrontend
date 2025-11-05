@@ -120,7 +120,6 @@ import {
   UsersIcon,
   VideoIcon,
   FileTextIcon,
-  BarChartIcon,
   SettingsIcon,
   BellIcon,
   MenuIcon,
@@ -170,7 +169,7 @@ const specialization = computed(() => {
 // Calculate real stats from API data
 const todayStats = computed(() => {
   const today = new Date().toISOString().split('T')[0];
-  
+
   // Count today's sessions
   const todaySessionsCount = sessions.value.filter(session => {
     if (!session.session_date && session.start_time) {
@@ -179,7 +178,7 @@ const todayStats = computed(() => {
     }
     return session.session_date === today;
   }).length;
-  
+
   // Count unique active clients (clients with sessions)
   const uniqueClientIds = new Set();
   sessions.value.forEach(session => {
@@ -190,7 +189,7 @@ const todayStats = computed(() => {
       }
     }
   });
-  
+
   return {
     sessions: todaySessionsCount,
     clients: uniqueClientIds.size
@@ -235,12 +234,6 @@ const navigationItems = [
     icon: FileTextIcon
   },
   {
-    name: 'counselor-analytics',
-    label: 'Analytics',
-    to: '/counselor-dashboard/analytics',
-    icon: BarChartIcon
-  },
-  {
     name: 'counselor-settings',
     label: 'Settings',
     to: '/counselor-dashboard/settings',
@@ -256,7 +249,6 @@ const getPageTitle = () => {
     'counselor-sessions': 'Sessions',
     'counselor-programs': 'Programs',
     'counselor-resources': 'Resources',
-    'counselor-analytics': 'Analytics',
     'counselor-settings': 'Settings'
   };
   return routeNames[route.name as string] || 'Counselor Dashboard';

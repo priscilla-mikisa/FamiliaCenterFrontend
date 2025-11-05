@@ -130,6 +130,69 @@ export interface CurrentSubscription {
   next_billing_date?: string;
 }
 
+export interface ProgramResponse {
+  id: string;
+  name: string;
+  topic: string;
+  bio: string;
+  start_time: string;
+  counsellor_ids: string[];
+  counsellors?: CounsellorResponse[];
+  program_type: string;
+  is_active: boolean;
+  end_date: string;
+  sub_programs?: SubProgramResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubProgramResponse {
+  id: string;
+  program_id: string;
+  name: string;
+  bio: string;
+  duration: number;
+  meeting_link: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProgramRequest {
+  name: string;
+  topic: string;
+  bio: string;
+  start_time: string;
+  counsellor_ids?: string[];
+  program_type: string;
+  end_date: string;
+}
+
+export interface UpdateProgramRequest {
+  name?: string;
+  topic?: string;
+  bio?: string;
+  start_time?: string;
+  counsellor_ids?: string[];
+  program_type?: string;
+  is_active?: boolean;
+  end_date?: string;
+}
+
+export interface CreateSubProgramRequest {
+  program_id: string;
+  name: string;
+  bio: string;
+  duration: number;
+  meeting_link?: string;
+}
+
+export interface UpdateSubProgramRequest {
+  name?: string;
+  bio?: string;
+  duration?: number;
+  meeting_link?: string;
+}
+
 export const AuthService = {
   async registerUser(userData: UserRegisterRequest) {
     const response = await apiClient.post('/users/register', userData);
@@ -236,7 +299,7 @@ export const SessionService = {
     const dateTimeString = `${sessionData.session_date}T${sessionData.session_time}:00`;
     const dateObj = new Date(dateTimeString);
     const isoString = dateObj.toISOString(); // This includes the 'Z' timezone
-    
+
     const backendData: BookSessionRequest = {
       counsellor_id: sessionData.counsellor_id,
       start_time: isoString,
@@ -340,10 +403,10 @@ export const SubscriptionService = {
       if (!planId || planId.trim() === '') {
         throw new Error('Plan ID is required');
       }
-      
+
       // Backend expects plan_id (lowercase with underscore) in the request body
       const requestBody = { plan_id: planId };
-      
+
       const response = await apiClient.post('/users/subscriptions/subscribe', requestBody);
       return response.data;
     } catch (error) {
@@ -386,7 +449,7 @@ export const SubscriptionService = {
       if (error?.response?.status === 404) {
         return { subscription: null };
       }
-      
+
       // For other errors, try localStorage fallback
       console.warn('Current subscription API error, checking local storage. Error:', error);
       const subStr = localStorage.getItem('currentSubscription');
@@ -397,7 +460,7 @@ export const SubscriptionService = {
           console.warn('Failed to parse subscription from localStorage');
         }
       }
-      
+
       // Return null subscription for any other case
       return { subscription: null };
     }
@@ -432,7 +495,7 @@ export const ForumService = {
       if (params.page) queryParams.append('page', params.page.toString());
       if (params.limit) queryParams.append('limit', params.limit.toString());
       if (params.status) queryParams.append('status', params.status);
-      
+
       const response = await apiClient.get(`/admin/forums?${queryParams.toString()}`);
       return response.data;
     } catch (error) {
@@ -473,43 +536,160 @@ export const ForumService = {
 };
 
 export const ProgramService = {
+  // User endpoints
+  async getUserPrograms() {
+    try {
+      const response = await apiClient.get('/users/programs/all');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user programs:', error);
+      throw error;
+    }
+  },
+
+  async getUserProgram(programId: string) {
+    try {
+      const response = await apiClient.get(`/users/programs/${programId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user program:', error);
+      throw error;
+    }
+  },
+
+  async getUserProgramsByType(type: string) {
+    try {
+      const response = await apiClient.get(`/users/programs/by-type?type=${type}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching programs by type:', error);
+      throw error;
+    }
+  },
+
+  async getUserSubProgram(subProgramId: string) {
+    try {
+      const response = await apiClient.get(`/users/programs/subprograms/${subProgramId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub-program:', error);
+      throw error;
+    }
+  },
+
+  // Counsellor endpoints
+  async getCounsellorPrograms() {
+    try {
+      const response = await apiClient.get('/counsellor/programs/all');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching counsellor programs:', error);
+      throw error;
+    }
+  },
+
+  async getCounsellorProgram(programId: string) {
+    try {
+      const response = await apiClient.get(`/counsellor/programs/${programId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching counsellor program:', error);
+      throw error;
+    }
+  },
+
+  async createProgram(programData: CreateProgramRequest) {
+    try {
+      const response = await apiClient.post('/counsellor/programs', programData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating program:', error);
+      throw error;
+    }
+  },
+
+  async updateProgram(programId: string, programData: UpdateProgramRequest) {
+    try {
+      const response = await apiClient.put(`/counsellor/programs/${programId}`, programData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating program:', error);
+      throw error;
+    }
+  },
+
+  async deleteProgram(programId: string) {
+    try {
+      const response = await apiClient.delete(`/counsellor/programs/${programId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting program:', error);
+      throw error;
+    }
+  },
+
+  // Sub-program endpoints
+  async createSubProgram(subProgramData: CreateSubProgramRequest) {
+    try {
+      const response = await apiClient.post('/counsellor/programs/subprograms', subProgramData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating sub-program:', error);
+      throw error;
+    }
+  },
+
+  async getSubProgramsByProgramId(programId: string) {
+    try {
+      const response = await apiClient.get(`/counsellor/programs/${programId}/subprograms`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub-programs:', error);
+      throw error;
+    }
+  },
+
+  async updateSubProgram(subProgramId: string, subProgramData: UpdateSubProgramRequest) {
+    try {
+      const response = await apiClient.put(`/counsellor/programs/subprograms/${subProgramId}`, subProgramData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating sub-program:', error);
+      throw error;
+    }
+  },
+
+  async deleteSubProgram(subProgramId: string) {
+    try {
+      const response = await apiClient.delete(`/counsellor/programs/subprograms/${subProgramId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting sub-program:', error);
+      throw error;
+    }
+  },
+
+  // Legacy methods for backward compatibility
   async getPrograms() {
-    return {
-      data: [
-        {
-          id: 1,
-          title: "Marriage Restoration Program",
-          description: "6-week intensive program for couples seeking to rebuild their relationship",
-          is_enrolled: false,
-          current_week: 0,
-          total_weeks: 6,
-          session_count: 6,
-          resources_count: 24,
-          next_session: null
-        },
-        {
-          id: 2,
-          title: "Parenting Excellence Program",
-          description: "8-week program for effective parenting strategies",
-          is_enrolled: false,
-          current_week: 0,
-          total_weeks: 8,
-          session_count: 8,
-          resources_count: 32,
-          next_session: null
-        }
-      ]
-    };
+    const userType = localStorage.getItem('userType');
+    if (userType === 'counsellor') {
+      return this.getCounsellorPrograms();
+    }
+    return this.getUserPrograms();
   },
 
+  async getProgram(id: string) {
+    const userType = localStorage.getItem('userType');
+    if (userType === 'counsellor') {
+      return this.getCounsellorProgram(id);
+    }
+    return this.getUserProgram(id);
+  },
+
+  // Note: enrollInProgram is not yet implemented on backend
   async enrollInProgram(programId: number) {
+    console.warn('enrollInProgram not yet implemented on backend');
     return { success: true, message: "Enrolled successfully", program_id: programId };
-  },
-
-  async getProgram(id: number) {
-    const programs = await this.getPrograms();
-    const program = programs.data.find(p => p.id === id);
-    return { data: program };
   }
 };
 
@@ -623,10 +803,10 @@ export const ResourceService = {
     } else {
       // Users use the download endpoint with filename
       const resourceResponse = await this.getUserResource(id);
-      
+
       // Handle different response structures to extract filename
       let filename: string | undefined;
-      
+
       // Extract resource data from response
       let resourceData: any = resourceResponse;
       if (resourceResponse?.data) {
@@ -634,12 +814,12 @@ export const ResourceService = {
       } else if (resourceResponse?.resource) {
         resourceData = resourceResponse.resource;
       }
-      
+
       // Try different possible locations for filename
       if (resourceData) {
         // Priority 1: Direct filename field (most common)
         filename = resourceData.filename || resourceData.file_name || resourceData.file;
-        
+
         // Priority 2: Extract from url field
         if (!filename && resourceData.url) {
           // Extract filename from URL (e.g., "/resources/filename.pdf" or "filename.pdf")
@@ -650,19 +830,19 @@ export const ResourceService = {
             filename = lastPart.split('?')[0];
           }
         }
-        
+
         // Priority 3: Check if there's a file_path or storage_path
         if (!filename && resourceData.file_path) {
           const pathParts = resourceData.file_path.split('/');
           filename = pathParts[pathParts.length - 1];
         }
-        
+
         if (!filename && resourceData.storage_path) {
           const pathParts = resourceData.storage_path.split('/');
           filename = pathParts[pathParts.length - 1];
         }
       }
-      
+
       // If we still don't have a filename, log the resource structure for debugging
       if (!filename) {
         console.error('Could not extract filename from resource. Available fields:', {
@@ -673,10 +853,10 @@ export const ResourceService = {
         });
         throw new Error('Could not determine filename for resource download. Resource may not have a filename field.');
       }
-      
+
       // Ensure filename doesn't contain the full path
       filename = filename.split('/').pop() || filename;
-      
+
       return this.downloadUserResource(filename);
     }
   },

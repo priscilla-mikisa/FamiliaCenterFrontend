@@ -149,9 +149,9 @@ const userName = computed(() => {
   return `${firstName} ${lastName}`.trim() || 'User';
 });
 
-const userEmail = computed(() => {
-  return user.value?.email || '';
-});
+// const userEmail = computed(() => {
+//   return user.value?.email || '';
+// });
 
 const navigationItems = [
   {
