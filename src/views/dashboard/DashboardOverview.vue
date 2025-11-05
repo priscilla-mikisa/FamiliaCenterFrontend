@@ -246,30 +246,10 @@
           </div>
         </div>
 
-        <!-- Recent Activity -->
-        <div class="bg-white rounded-xl shadow mt-6">
-          <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
-          </div>
-          <div class="p-6">
-            <div v-if="recentActivity.length > 0" class="space-y-4">
-              <div v-for="activity in recentActivity" :key="activity.id" class="flex items-start space-x-3">
-                <div :class="`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`">
-                  <component :is="activity.icon" class="w-4 h-4" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm text-gray-900">{{ activity.message }}</p>
-                  <p class="text-xs text-gray-500">{{ activity.time }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-center text-gray-500 text-sm">
-              No recent activity
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
+
 
     <!-- Book Session Modal -->
     <BookSessionModal
@@ -292,7 +272,6 @@ import {
   CalendarIcon,
   ClockIcon,
   UserIcon,
-  CheckCircleIcon,
   CreditCardIcon
 } from 'lucide-vue-next';
 import { useSessions } from '@/composables/useSessions';
@@ -369,29 +348,7 @@ const selectedCounselor = ref<any>(null);
 const counselors = ref<any[]>([]);
 const counselorsLoading = ref(false);
 
-const recentActivity = ref([
-  {
-    id: 1,
-    message: 'Profile updated successfully',
-    time: '2 hours ago',
-    icon: CheckCircleIcon,
-    color: 'bg-green-100 text-green-600'
-  },
-  {
-    id: 2,
-    message: 'Session booked with counselor',
-    time: '1 day ago',
-    icon: VideoIcon,
-    color: 'bg-blue-100 text-blue-600'
-  },
-  {
-    id: 3,
-    message: 'Downloaded new resources',
-    time: '3 days ago',
-    icon: FileTextIcon,
-    color: 'bg-purple-100 text-purple-600'
-  }
-]);
+
 
 // Computed stats based on real data
 const stats = computed(() => ({
@@ -450,7 +407,7 @@ const fetchCounselorsForBooking = async () => {
   counselorsLoading.value = true;
   try {
     const response = await apiClient.get('/users/counsellors/all');
-    
+
     if (Array.isArray(response.data)) {
       counselors.value = response.data;
     } else if (response.data?.data && Array.isArray(response.data.data)) {
