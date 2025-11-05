@@ -1,16 +1,16 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 relative">
-    <router-link to="/" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 transition-colors">
-      <XIcon class="w-6 h-6 text-gray-600" />
-    </router-link>
+  <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
+      <router-link to="/" class="absolute top-4 right-4 p-1 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors z-10">
+        <XIcon class="w-6 h-6 text-white" />
+      </router-link>
 
-    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-green-600 p-6 text-center relative">
         <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
           <UserIcon class="w-8 h-8 text-white" />
         </div>
         <h1 class="text-2xl font-bold text-white">Join Our Community</h1>
-        <p class="text-green-100 mt-2">Create your account to access family support resources</p>
+        <p class="text-green-100 mt-2">Create your account to get started</p>
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 sm:p-8 max-h-[70vh] overflow-y-auto">
@@ -23,9 +23,10 @@
         </div>
 
         <div class="space-y-4">
+          <!-- Role Selection -->
           <div>
             <label for="userRole" class="block text-sm font-medium text-gray-700 mb-1">
-              I am signing up as a:
+              I am registering as <span class="text-red-500">*</span>
             </label>
             <select
               id="userRole"
@@ -41,7 +42,41 @@
             <p v-if="errors.userRole" class="mt-1 text-sm text-red-600">{{ errors.userRole }}</p>
           </div>
 
-          <!-- Salutation - Only for counselors -->
+          <!-- Name Fields -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">
+                First Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                v-model="formData.first_name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="John"
+              />
+              <p v-if="errors.first_name" class="mt-1 text-sm text-red-600">{{ errors.first_name }}</p>
+            </div>
+            <div>
+              <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">
+                Last Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                v-model="formData.last_name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Doe"
+              />
+              <p v-if="errors.last_name" class="mt-1 text-sm text-red-600">{{ errors.last_name }}</p>
+            </div>
+          </div>
+
+          <!-- Conditional: Salutation for counselors -->
           <div v-if="formData.userRole === 'counselor'">
             <label for="salutation" class="block text-sm font-medium text-gray-700 mb-1">
               Salutation <span class="text-red-500">*</span>
@@ -62,42 +97,10 @@
             <p v-if="errors.salutation" class="mt-1 text-sm text-red-600">{{ errors.salutation }}</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">
-                First Name
-              </label>
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                v-model="formData.first_name"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="John"
-              />
-              <p v-if="errors.first_name" class="mt-1 text-sm text-red-600">{{ errors.first_name }}</p>
-            </div>
-            <div>
-              <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              <input
-                id="lastName"
-                name="lastName"
-                type="text"
-                v-model="formData.last_name"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Doe"
-              />
-              <p v-if="errors.last_name" class="mt-1 text-sm text-red-600">{{ errors.last_name }}</p>
-            </div>
-          </div>
-
+          <!-- Email -->
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
+              Email Address <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -116,10 +119,11 @@
             <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
           </div>
 
+          <!-- Phone Number -->
           <div class="grid grid-cols-5 gap-3">
             <div class="col-span-2">
               <label for="countryCode" class="block text-sm font-medium text-gray-700 mb-1">
-                Country
+                Country <span class="text-red-500">*</span>
               </label>
               <select
                 id="countryCode"
@@ -128,23 +132,22 @@
                 class="w-full px-2 py-3 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Select</option>
-                <option value="US">🇺🇸 US +1</option>
-                <option value="KE">🇰🇪 KE +254</option>
-                <option value="UG">🇺🇬 UG +256</option>
-                <option value="GB">🇬🇧 GB +44</option>
-                <option value="NG">🇳🇬 NG +234</option>
-                <option value="ZA">🇿🇦 ZA +27</option>
-                <option value="CA">🇨🇦 CA +1</option>
-                <option value="AU">🇦🇺 AU +61</option>
-                <option value="IN">🇮🇳 IN +91</option>
-                <option value="DE">🇩🇪 DE +49</option>
-                <option value="FR">🇫🇷 FR +33</option>
+                <option value="+1">🇺🇸 US +1</option>
+                <option value="+254">🇰🇪 KE +254</option>
+                <option value="+256">🇺🇬 UG +256</option>
+                <option value="+44">🇬🇧 GB +44</option>
+                <option value="+234">🇳🇬 NG +234</option>
+                <option value="+27">🇿🇦 ZA +27</option>
+                <option value="+61">🇦🇺 AU +61</option>
+                <option value="+91">🇮🇳 IN +91</option>
+                <option value="+49">🇩🇪 DE +49</option>
+                <option value="+33">🇫🇷 FR +33</option>
               </select>
               <p v-if="errors.country_code" class="mt-1 text-sm text-red-600">{{ errors.country_code }}</p>
             </div>
             <div class="col-span-3">
               <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone Number <span class="text-red-500">*</span>
               </label>
               <input
                 id="phoneNumber"
@@ -158,9 +161,10 @@
             </div>
           </div>
 
+          <!-- Conditional: Specialization for counselors -->
           <div v-if="formData.userRole === 'counselor'">
             <label for="specialization" class="block text-sm font-medium text-gray-700 mb-1">
-              Specialization
+              Specialization <span class="text-red-500">*</span>
             </label>
             <select
               id="specialization"
@@ -182,7 +186,7 @@
             <p v-if="errors.specialization" class="mt-1 text-sm text-red-600">{{ errors.specialization }}</p>
           </div>
 
-          <!-- Bio - Only for counselors -->
+          <!-- Conditional: Bio for counselors -->
           <div v-if="formData.userRole === 'counselor'">
             <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">
               Professional Bio <span class="text-red-500">*</span>
@@ -199,7 +203,8 @@
             <p v-if="errors.bio" class="mt-1 text-sm text-red-600">{{ errors.bio }}</p>
           </div>
 
-          <div v-if="formData.userRole === 'counselor'" class="space-y-4">
+          <!-- Conditional: Documents for counselors -->
+          <div v-if="formData.userRole === 'counselor'" class="space-y-4 border-t pt-4">
             <h3 class="text-lg font-medium text-gray-900">Required Documents</h3>
 
             <div>
@@ -211,7 +216,7 @@
                 accept="image/*"
                 @change="(e) => handleFileUpload(e, 'selfie')"
                 required
-                class="w-full p-2 border border-gray-300 rounded"
+                class="w-full p-2 border border-gray-300 rounded-lg"
               />
               <div v-if="formData.selfiePhoto" class="text-sm text-green-600 mt-1">
                 ✓ {{ formData.selfiePhoto.name }}
@@ -228,7 +233,7 @@
                 accept="image/*"
                 @change="(e) => handleFileUpload(e, 'documentFront')"
                 required
-                class="w-full p-2 border border-gray-300 rounded"
+                class="w-full p-2 border border-gray-300 rounded-lg"
               />
               <div v-if="formData.documentFrontPhoto" class="text-sm text-green-600 mt-1">
                 ✓ {{ formData.documentFrontPhoto.name }}
@@ -245,7 +250,7 @@
                 accept="image/*"
                 @change="(e) => handleFileUpload(e, 'documentBack')"
                 required
-                class="w-full p-2 border border-gray-300 rounded"
+                class="w-full p-2 border border-gray-300 rounded-lg"
               />
               <div v-if="formData.documentBackPhoto" class="text-sm text-green-600 mt-1">
                 ✓ {{ formData.documentBackPhoto.name }}
@@ -254,14 +259,16 @@
             </div>
           </div>
 
+          <!-- Conditional: Account type for patients -->
           <div v-if="formData.userRole === 'patient'">
             <label for="account_type" class="block text-sm font-medium text-gray-700 mb-1">
-              Account Type
+              Account Type <span class="text-red-500">*</span>
             </label>
             <select
               id="account_type"
               name="account_type"
               v-model="formData.account_type"
+              required
               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="individual">Individual</option>
@@ -271,9 +278,10 @@
             </select>
           </div>
 
+          <!-- Password Fields -->
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              Password <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -282,19 +290,27 @@
               <input
                 id="password"
                 name="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="formData.password"
                 required
-                class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                class="pl-10 pr-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="At least 8 characters"
               />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <EyeOffIcon v-else class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
             </div>
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
           </div>
 
           <div>
             <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
+              Confirm Password <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -303,16 +319,25 @@
               <input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                :type="showConfirmPassword ? 'text' : 'password'"
                 v-model="formData.confirmPassword"
                 required
-                class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                class="pl-10 pr-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Confirm your password"
               />
+              <button
+                type="button"
+                @click="showConfirmPassword = !showConfirmPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <EyeIcon v-if="!showConfirmPassword" class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <EyeOffIcon v-else class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
             </div>
             <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
           </div>
 
+          <!-- Terms and Conditions -->
           <div class="flex items-start">
             <div class="flex items-center h-5">
               <input
@@ -320,6 +345,7 @@
                 name="agreeToTerms"
                 type="checkbox"
                 v-model="formData.agreeToTerms"
+                required
                 class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
               />
             </div>
@@ -335,6 +361,7 @@
           </div>
         </div>
 
+        <!-- Submit Button -->
         <button
           type="submit"
           :disabled="isLoading"
@@ -388,12 +415,17 @@ import {
   MailIcon,
   LockIcon,
   ArrowRightIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  EyeIcon,
+  EyeOffIcon
 } from 'lucide-vue-next';
 
 const router = useRouter();
 const { signUp, isLoading } = useAuth();
 const { errors, validateSignUpForm } = useValidation();
+
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 const formData = reactive({
   first_name: '',
@@ -445,10 +477,12 @@ const handleFileUpload = (event: Event, type: string) => {
 const handleSubmit = async () => {
   console.log('Form submission started');
 
+  // Clear previous errors
   Object.keys(errors.value).forEach(key => {
     delete errors.value[key];
   });
 
+  // Validate counselor-specific fields
   if (formData.userRole === 'counselor') {
     if (!formData.salutation) {
       errors.value.salutation = 'Salutation is required for counselors';
@@ -467,6 +501,7 @@ const handleSubmit = async () => {
     }
   }
 
+  // Validate common fields
   if (!validateSignUpForm(formData)) {
     console.log('Validation failed:', errors.value);
     return;
@@ -510,17 +545,28 @@ const handleSubmit = async () => {
         id_back_photo: backBase64
       };
 
-      console.log('Submitting counselor registration with correct field names...');
+      console.log('Submitting counselor registration...');
 
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/counsellor/register`, counselorData, {
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/counsellor/register`,
+        counselorData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
       console.log('Counselor registration successful:', response.data);
+
+      successMessage.value = 'Account created successfully! Redirecting...';
+
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+
     } else {
+      // Patient/User registration
       const userData = {
-        name: `${formData.first_name} ${formData.last_name}`,
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
@@ -528,25 +574,21 @@ const handleSubmit = async () => {
         confirmPassword: formData.confirmPassword,
         phone_number: formData.phone_number,
         country_code: formData.country_code,
-        userRole: formData.userRole as 'patient' | 'counselor',
         account_type: formData.account_type,
-        specialization: formData.specialization,
+        name: `${formData.first_name} ${formData.last_name}`,
+        userRole: formData.account_type as 'patient' | 'counselor',
       };
 
-      console.log('Calling signUp with userData (ORIGINAL WAY):', userData);
+      console.log('Calling signUp with userData:', userData);
       const response = await signUp(userData);
       console.log('Patient registration successful:', response);
+
+      successMessage.value = 'Account created successfully! Redirecting...';
+
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     }
-
-    successMessage.value = 'Account created successfully! Redirecting...';
-
-    setTimeout(() => {
-      if (formData.userRole === 'counselor') {
-        router.push('/counselor-dashboard');
-      } else {
-        router.push('/dashboard');
-      }
-    }, 2000);
 
   } catch (error: unknown) {
     console.error('Registration error:', error);

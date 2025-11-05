@@ -19,46 +19,7 @@
         <p class="text-green-100 mt-2">Sign in to your account</p>
       </div>
 
-      <div class="p-4 bg-gray-50 border-b">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Login as:</label>
-        <div class="flex space-x-2">
-          <button
-            type="button"
-            @click="selectedUserType = 'user'"
-            :class="`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-              selectedUserType === 'user'
-                ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`"
-          >
-            Patient/Client
-          </button>
-          <button
-            type="button"
-            @click="selectedUserType = 'counselor'"
-            :class="`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-              selectedUserType === 'counselor'
-                ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`"
-          >
-            Counselor
-          </button>
-          <button
-            type="button"
-            @click="selectedUserType = 'admin'"
-            :class="`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-              selectedUserType === 'admin'
-                ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`"
-          >
-            Admin
-          </button>
-        </div>
-      </div>
-
-
+      <!-- Session Expired Message -->
       <div v-if="sessionExpiredMessage.show" class="mx-6 mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
         <div class="flex items-center">
           <svg class="w-5 h-5 text-orange-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -68,12 +29,12 @@
             <h3 class="text-sm font-medium text-orange-800">Session Expired</h3>
             <p class="text-sm text-orange-700 mt-1">
               Your session has expired. Please login again to continue.
-              {{ sessionExpiredMessage.userType ? `(Previously logged in as ${sessionExpiredMessage.userType})` : '' }}
             </p>
           </div>
         </div>
       </div>
 
+      <!-- Token Expiring Soon Message -->
       <div v-if="tokenExpiryInfo?.isExpiringSoon" class="mx-6 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div class="flex items-center">
           <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -89,6 +50,7 @@
         </div>
       </div>
 
+      <!-- Status Message -->
       <div v-if="loginStatus.message" :class="`px-4 py-3 mx-6 mt-4 rounded-lg ${
         loginStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
       }`">
@@ -129,33 +91,22 @@
               <input
                 id="password"
                 name="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="formData.password"
                 required
-                class="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                class="pl-10 pr-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Enter your password"
               />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <EyeIcon v-if="!showPassword" class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <EyeOffIcon v-else class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
             </div>
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
-          </div>
-
-          <div v-if="selectedUserType === 'admin' && showOTPField">
-            <label for="otpCode" class="block text-sm font-medium text-gray-700 mb-1">
-              OTP Code
-            </label>
-            <div class="relative">
-              <input
-                id="otpCode"
-                name="otpCode"
-                type="text"
-                v-model="formData.otpCode"
-                required
-                maxlength="6"
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-lg tracking-widest"
-                placeholder="000000"
-              />
-            </div>
-            <p class="mt-1 text-xs text-gray-500">Enter the 6-digit code sent to your email</p>
           </div>
 
           <div class="flex items-center justify-between">
@@ -191,10 +142,10 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            {{ selectedUserType === 'admin' && !showOTPField ? 'Sending OTP...' : 'Signing in...' }}
+            Signing in...
           </span>
           <span v-else class="flex items-center">
-            {{ selectedUserType === 'admin' && !showOTPField ? 'Send OTP' : 'Sign In' }}
+            Sign In
             <ArrowRightIcon class="w-5 h-5 ml-2" />
           </span>
         </button>
@@ -231,7 +182,9 @@ import {
   ShieldCheckIcon,
   MailIcon,
   LockIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  EyeIcon,
+  EyeOffIcon
 } from 'lucide-vue-next';
 
 interface TokenExpiryInfo {
@@ -249,36 +202,24 @@ interface SessionExpiredMessage {
 
 interface LoginResponse {
   token?: string;
-  user?: string;
+  user?: any;
+  counsellor?: any;
   userType?: string;
   success?: boolean;
   message?: string;
 }
 
-interface AdditionalAuthMethods {
-  verifyAdminOTP?: (username: string, otpCode: string) => Promise<LoginResponse>;
-}
-
 const router = useRouter();
-const authComposable = useAuth();
+const { login, isLoading, getTokenExpiryInfo } = useAuth();
 const { errors, validateLoginForm } = useValidation();
 
-const { login, isLoading, getTokenExpiryInfo } = authComposable;
-
-const verifyAdminOTP = (authComposable as ReturnType<typeof useAuth> & AdditionalAuthMethods).verifyAdminOTP || (() => {
-  throw new Error('verifyAdminOTP method not available');
-});
-
-const selectedUserType = ref<'user' | 'counselor' | 'admin'>('user');
-const showOTPField = ref(false);
-
+const showPassword = ref(false);
 const sessionExpiredMessage = ref<SessionExpiredMessage>({ show: false, userType: '' });
 const tokenExpiryInfo = ref<TokenExpiryInfo | null>(null);
 
 const formData = reactive({
   username: '',
   password: '',
-  otpCode: '',
   rememberMe: false
 });
 
@@ -290,17 +231,9 @@ const loginStatus = reactive({
 onMounted(() => {
   if (typeof window !== 'undefined') {
     const sessionExpired = sessionStorage.getItem('sessionExpired') === 'true';
-    const previousUserType = sessionStorage.getItem('previousUserType') || '';
 
     if (sessionExpired) {
-      sessionExpiredMessage.value = { show: true, userType: previousUserType };
-
-      if (previousUserType === 'counsellor') {
-        selectedUserType.value = 'counselor';
-      } else if (previousUserType === 'user') {
-        selectedUserType.value = 'user';
-      }
-
+      sessionExpiredMessage.value = { show: true, userType: '' };
       sessionStorage.removeItem('sessionExpired');
       sessionStorage.removeItem('previousUserType');
     }
@@ -344,94 +277,73 @@ const handleSubmit = async () => {
   }
 
   try {
-    if (selectedUserType.value === 'admin') {
-      if (!showOTPField.value) {
-        const response = await login({
-          username: formData.username,
-          password: formData.password,
-          rememberMe: formData.rememberMe,
-          userType: 'admin'
-        }) as LoginResponse;
+    // Try user login first
+    let response: LoginResponse | null = null;
+    let detectedUserType: 'user' | 'counselor' | null = null;
 
-        if (response?.success || response?.token) {
-          showOTPField.value = true;
-          loginStatus.success = true;
-          loginStatus.message = 'OTP sent to your email. Please enter the code below.';
-        }
-      } else {
-        if (!formData.otpCode || formData.otpCode.length !== 6) {
-          errors.value.otpCode = 'Please enter a valid 6-digit OTP code';
-          return;
-        }
-
-        const response = await verifyAdminOTP(formData.username, formData.otpCode) as LoginResponse;
-
-        if (response.token) {
-          loginStatus.success = true;
-          loginStatus.message = 'Admin login successful! Redirecting...';
-
-          setTimeout(() => {
-            router.push('/admin-dashboard');
-          }, 2000);
-        }
-      }
-    } else {
-      const response = await login({
+    // Try user endpoint
+    try {
+      response = await login({
         username: formData.username,
         password: formData.password,
         rememberMe: formData.rememberMe,
-        userType: selectedUserType.value
+        userType: 'user'
       }) as LoginResponse;
 
       if (response?.token) {
-        sessionExpiredMessage.value = { show: false, userType: '' };
-
-        loginStatus.success = true;
-        loginStatus.message = 'Login successful! Redirecting...';
-
-        console.log('Login successful with remember me:', formData.rememberMe);
-
-        setTimeout(() => {
-          if (selectedUserType.value === 'counselor') {
-            router.push('/counselor-dashboard');
-          } else {
-            router.push('/dashboard');
-          }
-        }, 2000);
-      } else {
-        loginStatus.success = false;
-        loginStatus.message = response?.message || 'Invalid email or password';
+        detectedUserType = 'user';
       }
+    } catch (userError) {
+      // User login failed, try counselor
+      console.log('User login failed, trying counselor...');
+    }
+
+    // If user login failed, try counselor
+    if (!response?.token) {
+      try {
+        response = await login({
+          username: formData.username,
+          password: formData.password,
+          rememberMe: formData.rememberMe,
+          userType: 'counselor'
+        }) as LoginResponse;
+
+        if (response?.token) {
+          detectedUserType = 'counselor';
+        }
+      } catch (counselorError) {
+        // Both failed
+        console.log('Counselor login also failed');
+      }
+    }
+
+    if (response?.token && detectedUserType) {
+      sessionExpiredMessage.value = { show: false, userType: '' };
+
+      loginStatus.success = true;
+      loginStatus.message = 'Login successful! Redirecting...';
+
+      console.log('Login successful as:', detectedUserType);
+
+      setTimeout(() => {
+        if (detectedUserType === 'counselor') {
+          router.push('/counselor-dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      }, 1500);
+    } else {
+      loginStatus.success = false;
+      loginStatus.message = 'Invalid email or password. Please check your credentials and try again.';
     }
   } catch (error) {
     loginStatus.success = false;
     if (error instanceof Error) {
-      loginStatus.message = error.message;
+      loginStatus.message = error.message || 'Invalid email or password';
     } else {
-      loginStatus.message = 'An error occurred during login';
+      loginStatus.message = 'An error occurred during login. Please try again.';
     }
     console.error('Login error:', error);
   }
 };
-
-const clearMessage = () => {
-  if (loginStatus.message) {
-    setTimeout(() => {
-      loginStatus.message = '';
-    }, 5000);
-  }
-};
-
-const messageWatcher = () => {
-  if (loginStatus.message) {
-    clearMessage();
-  }
-};
-
-const originalMessage = loginStatus.message;
-setInterval(() => {
-  if (loginStatus.message !== originalMessage && loginStatus.message) {
-    messageWatcher();
-  }
-}, 100);
 </script>
