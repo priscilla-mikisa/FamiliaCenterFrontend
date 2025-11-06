@@ -107,9 +107,23 @@ export interface Forum {
   related_events: RelatedEvent[] | null;
   isRegistered?: boolean;
   isPublic?: boolean;
+  is_public?: boolean;
   registeredCount?: number;
+  status?: 'draft' | 'published' | 'unpublished';
+  can_edit?: boolean;
+  is_past?: boolean;
+  has_video?: boolean;
+  video_url?: string;
+  video_preview_url?: string;
+  video_file_name?: string;
+  video_file_size?: number;
+  host_name?: string;
+  host_title?: string;
+  host_bio?: string;
   createdAt?: string;
   updatedAt?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RelatedEvent {

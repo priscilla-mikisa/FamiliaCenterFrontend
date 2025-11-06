@@ -27,27 +27,61 @@ const publicEndpoints = [
   '/auth/login',
   '/auth/refresh',
   '/auth/forgot-password',
-  '/auth/reset-password'
+  '/auth/reset-password',
+  '/admin/login',
+  '/forums'
 ];
 
 const isPublicEndpoint = (url: string): boolean => {
-  return publicEndpoints.some(endpoint => url.includes(endpoint));
+  if (!url) return false;
+  // Check for exact matches or paths that start with the endpoint
+  // This prevents /admin/forums from matching /forums
+  return publicEndpoints.some(endpoint => {
+    // Exact match
+    if (url === endpoint) return true;
+    // Path starts with endpoint followed by / or ?
+    if (url.startsWith(endpoint + '/') || url.startsWith(endpoint + '?')) return true;
+    // For /forums, only match if it's exactly /forums or /forums/... but NOT /admin/forums
+    if (endpoint === '/forums') {
+      return url === '/forums' || (url.startsWith('/forums/') && !url.startsWith('/admin/forums'));
+    }
+    return false;
+  });
 };
 
 apiClient.interceptors.request.use(
   (config) => {
+    const isAdminEndpoint = config.url?.includes('/admin/');
+    
     if (isPublicEndpoint(config.url || '')) {
       return config;
     }
 
-    const token = TokenManager.getValidToken();
+    // Check for admin token first (for admin endpoints)
+    let token: string | null = null;
+    const userType = localStorage.getItem('userType');
+    
+    if (userType === 'admin' || isAdminEndpoint) {
+      // For admin endpoints, ALWAYS use admin_token (the token from admin login)
+      // This token has account_type: "admin" in its claims
+      const adminToken = localStorage.getItem('admin_token');
+      const authToken = localStorage.getItem('authToken');
+      
+      if (adminToken) {
+        token = adminToken;
+      } else if (authToken) {
+        token = authToken;
+      }
+    } else {
+      // For non-admin users, use TokenManager
+      token = TokenManager.getValidToken();
+    }
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       const authStatus = TokenManager.getAuthStatus();
       if (authStatus.wasRemembered || authStatus.userType) {
-        console.warn('Token expired or missing, handling expired session');
         TokenManager.handleExpiredToken();
       }
     }
@@ -55,7 +89,6 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -71,19 +104,18 @@ apiClient.interceptors.response.use(
     
     // Suppress error logging for 404s on subscription/current endpoint (valid case - no subscription)
     const isSubscriptionCurrentEndpoint = url.includes('/subscriptions/current');
-    
-    if (!isSubscriptionCurrentEndpoint) {
-      console.error('API Error:', {
-        url,
-        status,
-        data: error.response?.data
-      });
-    }
 
     if (!isPublicEndpoint(url)) {
       if (status === 401 || status === 403) {
-        console.warn('Authentication failed - handling expired token');
-        TokenManager.handleExpiredToken();
+        const userType = localStorage.getItem('userType');
+        const isAdminEndpoint = url.includes('/admin/');
+        
+        if (userType === 'admin' || isAdminEndpoint) {
+          // Don't auto-redirect on 403 - let user see the error
+          // They might need to log in again or check their token
+        } else {
+          TokenManager.handleExpiredToken();
+        }
       }
     }
     

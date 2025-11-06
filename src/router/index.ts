@@ -3,6 +3,8 @@ import HomeView from '@/views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import SignUpView from '@/views/SignUpView.vue';
 import ForumDetailsView from '@/views/ForumDetailsView.vue';
+import PastForumsView from '@/views/PastForumsView.vue';
+import UpcomingForumsView from '@/views/UpcomingForumsView.vue';
 
 
 import TermsOfUse from '@/components/TermsOfUse.vue';
@@ -27,6 +29,8 @@ import CounselorSettings from '@/views/counselor/CounselorSettings.vue';
 
 import AdminDashboardLayout from '@/components/Admin/AdminDashboardLayout.vue';
 import AdminOverview from '@/views/admin/AdminOverview.vue';
+import AdminLogin from '@/components/Admin/AdminLogin.vue';
+// import AdminDashboard from '@/components/AdminDashboard.vue';
 import ForumManagement from '@/views/admin/ForumManagement.vue';
 import ForumForm from '@/components/Admin/ForumForm.vue';
 
@@ -57,6 +61,200 @@ const router = createRouter({
     }
   },
   {
+      path: '/admin-login',
+      name: 'admin-login',
+      component: AdminLogin,
+      meta: {
+        requiresGuest: true,
+        title: 'Admin Login - FamiSpace'
+      }
+    },
+
+    {
+      path: '/dashboard',
+      component: DashBoardLayout,
+      meta: { requiresAuth: true, allowedUserTypes: ['user'] },
+      children: [
+        {
+          path: '',
+          name: 'dashboard-overview',
+          component: DashboardOverview
+        },
+        {
+          path: 'programs',
+          name: 'dashboard-programs',
+          component: ProgramsView
+        },
+        {
+          path: 'sessions',
+          name: 'dashboard-sessions',
+          component: SessionsView
+        },
+        {
+          path: 'sessions/join/:sessionId',
+          name: 'join-session',
+          component: JoinSessionView,
+          props: true
+        },
+        {
+          path: 'resources',
+          name: 'dashboard-resources',
+          component: ResourcesView
+        },
+        {
+          path: 'subscription',
+          name: 'dashboard-subscription',
+          component: SubscriptionPlans
+        },
+        {
+          path: 'settings',
+          name: 'dashboard-settings',
+          component: SettingsView
+        }
+      ]
+    },
+
+    {
+      path: '/counselor-dashboard',
+      component: CounselorDashboardLayout,
+      meta: { requiresAuth: true, allowedUserTypes: ['counsellor'] },
+      children: [
+        {
+          path: '',
+          name: 'counselor-overview',
+          component: CounselorOverview
+        },
+        {
+          path: 'clients',
+          name: 'counselor-clients',
+          component: CounselorClients
+        },
+        {
+          path: 'schedule',
+          name: 'counselor-schedule',
+          component: CounselorSchedule
+        },
+        {
+          path: 'sessions',
+          name: 'counselor-sessions',
+          component: CounselorSessions
+        },
+        {
+          path: 'programs',
+          name: 'counselor-programs',
+          component: CounselorPrograms
+        },
+        {
+          path: 'resources',
+          name: 'counselor-resources',
+          component: CounselorResources
+        },
+        {
+          path: 'settings',
+          name: 'counselor-settings',
+          component: CounselorSettings
+        },
+      ]
+    },
+
+    {
+      path: '/admin-login',
+      name: 'admin-login',
+      component: AdminLogin,
+      meta: {
+        requiresGuest: true,
+        title: 'Admin Login - FamiSpace'
+      }
+    },
+
+    {
+      path: '/dashboard',
+      component: DashBoardLayout,
+      meta: { requiresAuth: true, allowedUserTypes: ['user'] },
+      children: [
+        {
+          path: '',
+          name: 'dashboard-overview',
+          component: DashboardOverview
+        },
+        {
+          path: 'programs',
+          name: 'dashboard-programs',
+          component: ProgramsView
+        },
+        {
+          path: 'sessions',
+          name: 'dashboard-sessions',
+          component: SessionsView
+        },
+        {
+          path: 'sessions/join/:sessionId',
+          name: 'join-session',
+          component: JoinSessionView,
+          props: true
+        },
+        {
+          path: 'resources',
+          name: 'dashboard-resources',
+          component: ResourcesView
+        },
+        {
+          path: 'subscription',
+          name: 'dashboard-subscription',
+          component: SubscriptionPlans
+        },
+        {
+          path: 'settings',
+          name: 'dashboard-settings',
+          component: SettingsView
+        }
+      ]
+    },
+
+    {
+      path: '/counselor-dashboard',
+      component: CounselorDashboardLayout,
+      meta: { requiresAuth: true, allowedUserTypes: ['counsellor'] },
+      children: [
+        {
+          path: '',
+          name: 'counselor-overview',
+          component: CounselorOverview
+        },
+        {
+          path: 'clients',
+          name: 'counselor-clients',
+          component: CounselorClients
+        },
+        {
+          path: 'schedule',
+          name: 'counselor-schedule',
+          component: CounselorSchedule
+        },
+        {
+          path: 'sessions',
+          name: 'counselor-sessions',
+          component: CounselorSessions
+        },
+        {
+          path: 'programs',
+          name: 'counselor-programs',
+          component: CounselorPrograms
+        },
+        {
+          path: 'resources',
+          name: 'counselor-resources',
+          component: CounselorResources
+        },
+        {
+          path: 'settings',
+          name: 'counselor-settings',
+          component: CounselorSettings
+        },
+      ]
+    },
+
+  {
     path: '/te',
     name: 'TermsOfUse',
     component: TermsOfUse,
@@ -75,6 +273,18 @@ const router = createRouter({
       path: '/signup',
       name: 'signup',
       component: SignUpView,
+      meta: { requiresGuest: true }
+    },
+    {
+      path: '/forums/upcoming',
+      name: 'upcoming-forums',
+      component: UpcomingForumsView,
+      meta: { requiresGuest: true }
+    },
+    {
+      path: '/forums/past',
+      name: 'past-forums',
+      component: PastForumsView,
       meta: { requiresGuest: true }
     },
     {

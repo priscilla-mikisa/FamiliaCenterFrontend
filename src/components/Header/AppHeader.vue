@@ -51,13 +51,8 @@
                   <div class="text-sm text-gray-500">Loading events...</div>
                 </div>
 
-                <!-- Error State -->
-                <div v-else-if="error" class="text-center py-4">
-                  <div class="text-sm text-red-500">{{ error }}</div>
-                </div>
-
                 <!-- Events -->
-                <div v-else-if="forums.length > 0">
+                <div v-if="forums.length > 0">
                   <div
                     v-for="(forum, index) in forums"
                     :key="forum.id"
@@ -79,11 +74,46 @@
                       </div>
                     </div>
                   </div>
+                  
+                  <!-- Action Links -->
+                  <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                    <router-link
+                      to="/forums/upcoming"
+                      class="block w-full text-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                      @click.stop
+                    >
+                      View All Upcoming
+                    </router-link>
+                    <router-link
+                      to="/forums/past"
+                      class="block w-full text-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                      @click.stop
+                    >
+                      View Past Forums
+                    </router-link>
+                  </div>
                 </div>
 
                 <!-- No Events -->
-                <div v-else class="text-center py-4">
-                  <div class="text-sm text-gray-500">No upcoming events</div>
+                <div v-else-if="!loading && !error" class="text-center py-6">
+                  <div class="mx-auto w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 rounded-full flex items-center justify-center mb-4">
+                    <CalendarIcon class="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 class="text-sm font-semibold text-gray-900 mb-2">No upcoming events</h4>
+                  <p class="text-xs text-gray-500 mb-4">Check back later for new events or explore past forums</p>
+                  <router-link
+                    to="/forums/past"
+                    class="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors shadow-sm hover:shadow"
+                    @click.stop
+                  >
+                    <CalendarIcon class="w-4 h-4 mr-2" />
+                    View Past Forums
+                  </router-link>
+                </div>
+                
+                <!-- Error State (only show if there's an actual error) -->
+                <div v-else-if="error && error !== 'Failed to fetch forums'" class="text-center py-4">
+                  <div class="text-sm text-red-500">{{ error }}</div>
                 </div>
 
               </div>
@@ -120,13 +150,8 @@
             <div class="text-sm text-gray-500">Loading events...</div>
           </div>
 
-          <!-- Error State -->
-          <div v-else-if="error" class="text-center py-4">
-            <div class="text-sm text-red-500">{{ error }}</div>
-          </div>
-
           <!-- Events -->
-          <div v-else-if="forums.length > 0">
+          <div v-if="forums.length > 0">
             <div
               v-for="(forum, index) in forums"
               :key="forum.id"
@@ -148,11 +173,46 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Action Links -->
+            <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+              <router-link
+                to="/forums/upcoming"
+                class="block w-full text-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                @click.stop
+              >
+                View All Upcoming
+              </router-link>
+              <router-link
+                to="/forums/past"
+                class="block w-full text-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                @click.stop
+              >
+                View Past Forums
+              </router-link>
+            </div>
           </div>
 
           <!-- No Events -->
-          <div v-else class="text-center py-4">
-            <div class="text-sm text-gray-500">No upcoming events</div>
+          <div v-else-if="!loading && !error" class="text-center py-6">
+            <div class="mx-auto w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 rounded-full flex items-center justify-center mb-4">
+              <CalendarIcon class="w-8 h-8 text-green-600" />
+            </div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-2">No upcoming events</h4>
+            <p class="text-xs text-gray-500 mb-4">Check back later for new events or explore past forums</p>
+            <router-link
+              to="/forums/past"
+              class="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors shadow-sm hover:shadow"
+              @click.stop
+            >
+              <CalendarIcon class="w-4 h-4 mr-2" />
+              View Past Forums
+            </router-link>
+          </div>
+          
+          <!-- Error State (only show if there's an actual error) -->
+          <div v-else-if="error && error !== 'Failed to fetch forums'" class="text-center py-4">
+            <div class="text-sm text-red-500">{{ error }}</div>
           </div>
 
         </div>
@@ -174,7 +234,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronDownIcon, MenuIcon, XIcon } from 'lucide-vue-next';
+import { ChevronDownIcon, MenuIcon, XIcon, CalendarIcon } from 'lucide-vue-next';
 import { useForums } from '@/composables/useForums';
 
 

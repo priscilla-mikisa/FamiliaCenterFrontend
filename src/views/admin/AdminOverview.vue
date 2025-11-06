@@ -116,7 +116,6 @@
 import { ref, onMounted } from 'vue';
 import { CalendarIcon, ClockIcon, UsersIcon, EyeIcon, PlusIcon, SettingsIcon } from 'lucide-vue-next';
 import { ForumService } from '@/services/apiService';
-import { getAllForums } from '@/data/dummyForums';
 
 const stats = ref({
   totalForums: 0,
@@ -145,12 +144,20 @@ const recentActivity = ref([
 
 onMounted(async () => {
   try {
-    // Use dummy data only
-    const response = getAllForums();
-    const forums = response.data.forums;
-    stats.value.totalForums = forums.length;
-    stats.value.upcomingForums = forums.filter(forum => new Date(forum.date) > new Date()).length;
-    stats.value.publicForums = forums.filter(forum => forum.isPublic).length;
+    const response = await ForumService.getAllForums();
+    if (response.status && response.data) {
+      const forums = response.data;
+      const now = new Date();
+      
+      stats.value.totalForums = forums.length;
+      stats.value.upcomingForums = forums.filter((forum: any) => {
+        const forumDate = new Date(forum.date);
+        return forumDate > now;
+      }).length;
+      stats.value.publicForums = forums.filter((forum: any) => {
+        return forum.is_public !== undefined ? forum.is_public : true;
+      }).length;
+    }
   } catch (error) {
     console.error('Error fetching forum stats:', error);
   }

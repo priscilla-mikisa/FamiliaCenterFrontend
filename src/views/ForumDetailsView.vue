@@ -103,6 +103,96 @@
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
         <!-- Main Content -->
         <div class="xl:col-span-2 space-y-6 lg:space-y-8">
+          <!-- Video Section - Show first if video is available -->
+          <div v-if="eventData.has_video || eventData.video_url || eventData.video_preview_url" class="bg-white rounded-xl shadow-sm p-4 sm:p-6 lg:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Watch Recording</h2>
+            <div class="relative">
+              <div class="w-full aspect-video bg-black rounded-lg overflow-hidden">
+                <video
+                  v-if="videoSource && !videoError"
+                  ref="videoPlayer"
+                  :src="videoSource"
+                  controls
+                  class="w-full h-full object-contain"
+                  @timeupdate="handleTimeUpdate"
+                  @loadedmetadata="handleVideoLoaded"
+                  @loadstart="handleVideoLoadStart"
+                  @canplay="handleVideoCanPlay"
+                  @error="handleVideoError"
+                  @stalled="handleVideoStalled"
+                  @progress="handleVideoProgress"
+                  preload="auto"
+                  playsinline
+                  webkit-playsinline
+                  x5-playsinline
+                  crossorigin="anonymous"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                
+                <!-- Video Loading State -->
+                <div v-if="videoLoading && !videoError" class="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p class="text-gray-500">Loading video...</p>
+                  </div>
+                </div>
+                
+                <!-- Video Error State -->
+                <div v-if="videoError" class="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <div class="text-center p-6">
+                    <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Video Error</h3>
+                    <p class="text-sm text-gray-600 mb-4">{{ videoError }}</p>
+                    <button
+                      @click="retryVideoLoad"
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+                
+                <div v-if="!videoSource && !videoError" class="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <p class="text-gray-500">No video available</p>
+                </div>
+              </div>
+              
+              <!-- Preview Overlay for non-logged-in users -->
+              <div
+                v-if="!isLoggedIn && showPreviewOverlay"
+                class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center rounded-lg"
+              >
+                <div class="text-center text-white p-6 max-w-md">
+                  <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                  </svg>
+                  <h3 class="text-xl font-bold mb-2">Continue Watching</h3>
+                  <p class="text-gray-300 mb-4">Sign in or create an account to watch the full recording</p>
+                  <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      @click="goToLogin"
+                      class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      @click="goToSignup"
+                      class="px-6 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p v-if="!isLoggedIn" class="text-sm text-gray-500 mt-2">
+              Preview: Watch the first 20 seconds. Sign in to watch the full recording.
+            </p>
+          </div>
+
           <!-- About Section -->
           <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 lg:p-8">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">About This Event</h2>
@@ -166,20 +256,21 @@
           </div>
 
           <!-- Host Information -->
-          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+          <div v-if="eventData.host.name || eventData.host.title || eventData.host.bio" class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
             <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Host</h3>
             <div class="flex items-start space-x-4">
               <div class="flex-shrink-0">
                 <div class="w-16 h-16 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center">
-                  <span class="text-white font-bold text-lg">RM</span>
+                  <span class="text-white font-bold text-lg">
+                    {{ getHostInitials(eventData.host.name) }}
+                  </span>
                 </div>
               </div>
               <div class="flex-1 min-w-0">
-                <h4 class="text-lg font-semibold text-gray-900">Mrs. Ruth Matoya</h4>
-                <p class="text-sm text-teal-600 font-medium">Therapist & Life Coach</p>
-                <p class="text-sm text-gray-600 mt-2">
-                  Licensed therapist and life coach specializing in family dynamics 
-                  and self-reparenting.
+                <h4 v-if="eventData.host.name" class="text-lg font-semibold text-gray-900">{{ eventData.host.name }}</h4>
+                <p v-if="eventData.host.title" class="text-sm text-teal-600 font-medium">{{ eventData.host.title }}</p>
+                <p v-if="eventData.host.bio" class="text-sm text-gray-600 mt-2">
+                  {{ eventData.host.bio }}
                 </p>
               </div>
             </div>
@@ -252,6 +343,64 @@ const route = useRoute();
 const router = useRouter();
 const { currentForum, loading, error, fetchForumById } = useForums();
 
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+const showPreviewOverlay = ref(false);
+const videoError = ref<string | null>(null);
+const videoLoading = ref(true);
+const PREVIEW_DURATION = 20; // 20 seconds preview
+
+const isLoggedIn = computed(() => {
+  return !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
+});
+
+const videoSource = computed(() => {
+  if (!currentForum.value) return '';
+  
+  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+  
+  // Helper function to construct video URL
+  const buildVideoUrl = (url: string | undefined): string => {
+    if (!url) return '';
+    
+    // If URL is already a full URL (starts with http:// or https://), use it as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If URL already starts with /api/v1, use it directly with base domain
+    if (url.startsWith('/api/v1')) {
+      const baseDomain = baseURL.replace('/api/v1', '');
+      return `${baseDomain}${url}`;
+    }
+    
+    // If URL starts with /, append to base domain
+    if (url.startsWith('/')) {
+      const baseDomain = baseURL.replace('/api/v1', '');
+      return `${baseDomain}${url}`;
+    }
+    
+    // Otherwise, append to baseURL
+    return `${baseURL}/${url}`;
+  };
+  
+  // If logged in, use full video URL
+  if (isLoggedIn.value && currentForum.value.video_url) {
+    return buildVideoUrl(currentForum.value.video_url);
+  }
+  
+  // If not logged in, use preview URL (20 seconds)
+  if (currentForum.value.video_preview_url) {
+    return buildVideoUrl(currentForum.value.video_preview_url);
+  }
+  
+  // Fallback: if there's a video_url but no preview_url, use video_url (for logged out users, backend should handle preview)
+  if (currentForum.value.video_url) {
+    return buildVideoUrl(currentForum.value.video_url);
+  }
+  
+  return '';
+});
+
 onMounted(async () => {
   const forumId = route.params.id as string;
   if (forumId) {
@@ -284,7 +433,11 @@ const eventData = computed(() => {
         contact: '',
         email: ''
       },
-      isRegistered: false
+      isRegistered: false,
+      has_video: false,
+      video_url: '',
+      video_preview_url: '',
+      is_past: false
     };
   }
   
@@ -306,18 +459,131 @@ const eventData = computed(() => {
     about2: forum.about2,
     learningPoints: forum.learning_points, // Map from API field
     host: {
-      name: 'Mrs. Ruth Matoya',
-      title: 'Therapist & Life Coach',
-      description: 'Licensed therapist and life coach specializing in family dynamics, self-reparenting, and healing generational patterns. With years of experience helping individuals and couples build healthier relationships.',
+      name: forum.host_name || '',
+      title: forum.host_title || '',
+      bio: forum.host_bio || '',
       contact: '+254 725 388 111',
       email: 'info@fami.space'
     },
-    isRegistered: forum.isRegistered || false
+    isRegistered: forum.isRegistered || false,
+    has_video: forum.has_video || false,
+    video_url: forum.video_url,
+    video_preview_url: forum.video_preview_url,
+    is_past: forum.is_past || false
   };
 });
 
 const registerForEvent = () => {
   // Redirect to signup page
+  router.push('/signup');
+};
+
+const getHostInitials = (name: string): string => {
+  if (!name) return '';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
+const handleTimeUpdate = () => {
+  if (!videoPlayer.value || isLoggedIn.value) return;
+  
+  // If user is not logged in and video has played for 20 seconds, show overlay
+  if (videoPlayer.value.currentTime >= PREVIEW_DURATION) {
+    videoPlayer.value.pause();
+    showPreviewOverlay.value = true;
+  }
+};
+
+const handleVideoLoadStart = () => {
+  videoLoading.value = true;
+  videoError.value = null;
+};
+
+const handleVideoCanPlay = () => {
+  videoLoading.value = false;
+  videoError.value = null;
+};
+
+const handleVideoLoaded = () => {
+  videoLoading.value = false;
+  if (!videoPlayer.value || isLoggedIn.value) return;
+  
+  // Set video to stop at 20 seconds for preview
+  videoPlayer.value.addEventListener('timeupdate', () => {
+    if (videoPlayer.value && videoPlayer.value.currentTime >= PREVIEW_DURATION) {
+      videoPlayer.value.pause();
+      showPreviewOverlay.value = true;
+    }
+  });
+};
+
+const handleVideoError = async (event: Event) => {
+  videoLoading.value = false;
+  const video = event.target as HTMLVideoElement;
+  const error = video.error;
+  
+  if (error) {
+    let errorMessage = 'Failed to load video';
+    
+    switch (error.code) {
+      case error.MEDIA_ERR_ABORTED:
+        errorMessage = 'Video loading was aborted';
+        break;
+      case error.MEDIA_ERR_NETWORK:
+        errorMessage = 'Network error while loading video. Please check your connection and try again.';
+        break;
+      case error.MEDIA_ERR_DECODE:
+        errorMessage = 'Video decoding error. The video file may be corrupted or in an unsupported format.';
+        break;
+      case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        errorMessage = 'Video format not supported by your browser. The server may not be sending the correct Content-Type header.';
+        break;
+      default:
+        // ERR_CONTENT_LENGTH_MISMATCH often results in a network error
+        // but the video might still be playable, so we'll try to continue
+        if (error.code === error.MEDIA_ERR_NETWORK) {
+          // Don't set error message for network errors, let it try to play
+          return;
+        }
+        errorMessage = `Video error: ${error.message || 'Unknown error'}`;
+    }
+    
+    videoError.value = errorMessage;
+  } else {
+    videoError.value = 'Failed to load video. Please check the video URL and try again.';
+  }
+};
+
+const handleVideoProgress = () => {
+  // Video is making progress - clear any loading state
+  if (videoLoading.value) {
+    videoLoading.value = false;
+  }
+};
+
+const handleVideoStalled = () => {
+  // Video stalled - might be network issue or Content-Length mismatch
+  // Don't show error immediately, let it try to recover
+};
+
+const retryVideoLoad = () => {
+  videoError.value = null;
+  videoLoading.value = true;
+  showPreviewOverlay.value = false;
+  
+  if (videoPlayer.value) {
+    videoPlayer.value.load();
+  }
+};
+
+const goToLogin = () => {
+  router.push('/login');
+};
+
+const goToSignup = () => {
   router.push('/signup');
 };
 

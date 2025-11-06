@@ -467,36 +467,105 @@ export const SubscriptionService = {
   }
 };
 
-export const ForumService = {
-  async getLatestForums(limit: number = 2) {
+export const AdminService = {
+  async login(email: string, password: string) {
     try {
-      const response = await apiClient.get(`/forums/latest?limit=${limit}`);
+      const response = await apiClient.post('/admin/login', { email, password });
+      if (response.data.status && response.data.token) {
+        // Clear any old tokens first to avoid conflicts
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('token');
+        
+        // Store admin token (this is the admin token with account_type: "admin")
+        localStorage.setItem('admin_token', response.data.token);
+        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('userType', 'admin');
+        localStorage.setItem('admin_id', response.data.admin_id);
+        
+        // Store token expiration
+        if (response.data.expires_in) {
+          const expiresAt = Date.now() + (response.data.expires_in * 1000);
+          localStorage.setItem('token_expires_at', expiresAt.toString());
+        }
+      }
       return response.data;
     } catch (error) {
-      console.error('Error fetching latest forums:', error);
+      console.error('Error logging in admin:', error);
       throw error;
     }
   },
 
-  async getForumById(id: string) {
+  async inviteAdmin(adminData: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    country_code?: string;
+    phone_number?: string;
+    is_super_admin?: boolean;
+  }) {
+    try {
+      const response = await apiClient.post('/admin/invite', adminData);
+      return response.data;
+    } catch (error) {
+      console.error('Error inviting admin:', error);
+      throw error;
+    }
+  },
+
+  async getAllAdmins() {
+    try {
+      const response = await apiClient.get('/admin/admins');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      throw error;
+    }
+  }
+};
+
+export const ForumService = {
+  // Public endpoints
+  async getPublishedForums(category?: string) {
+    try {
+      const url = category 
+        ? `/forums?category=${category}`
+        : '/forums';
+      const response = await apiClient.get(url);
+      return response.data;
+    } catch (error: any) {
+      // If endpoint doesn't exist (404), return empty response instead of throwing
+      if (error.response?.status === 404) {
+        return {
+          status: true,
+          data: null,
+          count: 0
+        };
+      }
+      console.error('Error fetching published forums:', error);
+      throw error;
+    }
+  },
+
+  async getPublishedForumById(id: string) {
     try {
       const response = await apiClient.get(`/forums/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching forum:', error);
+      console.error('Error fetching published forum:', error);
       throw error;
     }
   },
 
   // Admin endpoints
-  async getAllForums(params: { page?: number; limit?: number; status?: string } = {}) {
+  async getAllForums(status?: string) {
     try {
-      const queryParams = new URLSearchParams();
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.limit) queryParams.append('limit', params.limit.toString());
-      if (params.status) queryParams.append('status', params.status);
-
-      const response = await apiClient.get(`/admin/forums?${queryParams.toString()}`);
+      const url = status 
+        ? `/admin/forums?status=${status}`
+        : '/admin/forums';
+      const response = await apiClient.get(url);
       return response.data;
     } catch (error) {
       console.error('Error fetching all forums:', error);
@@ -504,9 +573,30 @@ export const ForumService = {
     }
   },
 
+  async getForumById(id: string) {
+    try {
+      const response = await apiClient.get(`/admin/forums/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching forum:', error);
+      throw error;
+    }
+  },
+
   async createForum(forumData: Partial<Forum>) {
     try {
-      const response = await apiClient.post('/admin/forums', forumData);
+      // Convert date to ISO 8601 format if needed
+      const data = { ...forumData };
+      if (data.date && !data.date.includes('T')) {
+        // If date is just a date string, convert to ISO datetime
+        const dateTime = data.time 
+          ? `${data.date}T${data.time}:00`
+          : `${data.date}T00:00:00`;
+        const dateObj = new Date(dateTime);
+        data.date = dateObj.toISOString();
+      }
+      
+      const response = await apiClient.post('/admin/forums', data);
       return response.data;
     } catch (error) {
       console.error('Error creating forum:', error);
@@ -516,10 +606,57 @@ export const ForumService = {
 
   async updateForum(id: string, forumData: Partial<Forum>) {
     try {
-      const response = await apiClient.put(`/admin/forums/${id}`, forumData);
+      // Convert date to ISO 8601 format if needed
+      const data = { ...forumData };
+      if (data.date && !data.date.includes('T')) {
+        const dateTime = data.time 
+          ? `${data.date}T${data.time}:00`
+          : `${data.date}T00:00:00`;
+        const dateObj = new Date(dateTime);
+        data.date = dateObj.toISOString();
+      }
+      
+      const response = await apiClient.put(`/admin/forums/${id}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating forum:', error);
+      throw error;
+    }
+  },
+
+  async publishForum(id: string) {
+    try {
+      const response = await apiClient.post(`/admin/forums/${id}/publish`);
+      return response.data;
+    } catch (error) {
+      console.error('Error publishing forum:', error);
+      throw error;
+    }
+  },
+
+  async unpublishForum(id: string) {
+    try {
+      const response = await apiClient.post(`/admin/forums/${id}/unpublish`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unpublishing forum:', error);
+      throw error;
+    }
+  },
+
+  async uploadVideo(id: string, videoFile: File) {
+    try {
+      const formData = new FormData();
+      formData.append('file', videoFile);
+
+      const response = await apiClient.post(`/admin/forums/${id}/video`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading video:', error);
       throw error;
     }
   },

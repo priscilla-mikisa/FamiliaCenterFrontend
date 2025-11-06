@@ -217,6 +217,43 @@
         </div>
       </div>
 
+      <!-- Host Information -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Host Information</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Host Name</label>
+            <input
+              v-model="form.host_name"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="e.g., Mrs. Ruth Matoya"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Host Title</label>
+            <input
+              v-model="form.host_title"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="e.g., Therapist & Life Coach"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Host Bio</label>
+            <textarea
+              v-model="form.host_bio"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="e.g., Licensed therapist and life coach specializing in family dynamics and self-reparenting."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
       <!-- Settings -->
       <div class="bg-white rounded-lg shadow-sm p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
@@ -278,6 +315,9 @@ const form = ref({
   about: '',
   about2: '',
   learning_points: [] as string[],
+  host_name: '',
+  host_title: '',
+  host_bio: '',
   isPublic: true
 });
 
@@ -304,14 +344,33 @@ const handleSubmit = async () => {
   loading.value = true;
   
   try {
-    if (isEdit.value) {
-      await ForumService.updateForum(route.params.id as string, form.value);
-    } else {
-      await ForumService.createForum(form.value);
-    }
+    // Prepare form data with proper date format
+    const formData: any = {
+      ...form.value,
+      is_public: form.value.isPublic
+    };
     
-    router.push('/admin-dashboard/forums');
-  } catch (error) {
+    // Remove isPublic if it exists (use is_public instead)
+    delete formData.isPublic;
+    
+    if (isEdit.value) {
+      const response = await ForumService.updateForum(route.params.id as string, formData);
+      if (response.status) {
+        router.push('/admin-dashboard/forums');
+      } else {
+        throw new Error(response.message || 'Failed to update forum');
+      }
+    } else {
+      const response = await ForumService.createForum(formData);
+      if (response.status) {
+        router.push('/admin-dashboard/forums');
+      } else {
+        throw new Error(response.message || 'Failed to create forum');
+      }
+    }
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.detail || error.response?.data?.error || error.message || 'Failed to save forum';
+    alert(errorMsg);
     console.error('Error saving forum:', error);
   } finally {
     loading.value = false;
@@ -323,23 +382,36 @@ onMounted(async () => {
     isEdit.value = true;
     try {
       const response = await ForumService.getForumById(route.params.id as string);
-      if (response.success) {
+      if (response.status && response.data) {
         const forum = response.data;
+        
+        // Parse ISO date to separate date and time
+        let dateStr = '';
+        let timeStr = '';
+        if (forum.date) {
+          const date = new Date(forum.date);
+          dateStr = date.toISOString().split('T')[0];
+          timeStr = date.toTimeString().slice(0, 5);
+        }
+        
         form.value = {
-          title: forum.title,
-          description: forum.description,
-          category: forum.category,
-          date: forum.date,
-          time: forum.time,
-          duration: forum.duration,
-          location: forum.location,
-          format: forum.format,
-          capacity: forum.capacity,
-          topics: forum.topics,
-          about: forum.about,
-          about2: forum.about2,
-          learning_points: forum.learning_points,
-          isPublic: forum.isPublic || true
+          title: forum.title || '',
+          description: forum.description || '',
+          host_name: forum.host_name || forum.hostName || '',
+          host_title: forum.host_title || forum.hostTitle || '',
+          host_bio: forum.host_bio || forum.hostBio || '',
+          category: forum.category || '',
+          date: dateStr,
+          time: forum.time || timeStr,
+          duration: forum.duration || '',
+          location: forum.location || '',
+          format: forum.format || '',
+          capacity: forum.capacity || 50,
+          topics: forum.topics || [],
+          about: forum.about || '',
+          about2: forum.about2 || '',
+          learning_points: forum.learning_points || [],
+          isPublic: forum.is_public !== undefined ? forum.is_public : true
         };
       }
     } catch (error) {
