@@ -97,6 +97,7 @@ export class TokenManager {
   }
 
   static storeToken(token: string, userData: UserData, userType: string, rememberMe: boolean = false) {
+    const normalizedUserType = userType.toLowerCase() === 'counselor' ? 'counsellor' : userType;
     this.clearTokens();
 
     if (rememberMe) {
@@ -107,7 +108,7 @@ export class TokenManager {
       localStorage.setItem(this.TOKEN_KEYS.REMEMBER_ME, 'false');
     }
 
-    localStorage.setItem(this.TOKEN_KEYS.USER_TYPE, userType);
+    localStorage.setItem(this.TOKEN_KEYS.USER_TYPE, normalizedUserType);
     localStorage.setItem(this.TOKEN_KEYS.USER_ID, userData?.id || '');
     localStorage.setItem(this.TOKEN_KEYS.USER, JSON.stringify(userData));
   }

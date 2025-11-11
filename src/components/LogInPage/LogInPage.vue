@@ -279,7 +279,7 @@ const handleSubmit = async () => {
   try {
     // Try user login first
     let response: LoginResponse | null = null;
-    let detectedUserType: 'user' | 'counselor' | null = null;
+    let detectedUserType: 'user' | 'counsellor' | null = null;
 
     // Try user endpoint
     try {
@@ -309,7 +309,7 @@ const handleSubmit = async () => {
         }) as LoginResponse;
 
         if (response?.token) {
-          detectedUserType = 'counselor';
+          detectedUserType = 'counsellor';
         }
       } catch (counselorError) {
         // Both failed
@@ -326,7 +326,7 @@ const handleSubmit = async () => {
       console.log('Login successful as:', detectedUserType);
 
       setTimeout(() => {
-        if (detectedUserType === 'counselor') {
+        if (detectedUserType === 'counsellor') {
           router.push('/counselor-dashboard');
         } else {
           router.push('/dashboard');

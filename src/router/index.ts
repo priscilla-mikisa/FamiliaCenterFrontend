@@ -38,8 +38,17 @@ const isAuthenticated = (): boolean => {
   return !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
 };
 
+const normalizeUserType = (type: string | null): string | null => {
+  if (!type) return type;
+  if (type.toLowerCase() === 'counselor') {
+    return 'counsellor';
+  }
+  return type;
+};
+
 const getUserType = (): string | null => {
-  return localStorage.getItem('userType');
+  const storedType = localStorage.getItem('userType');
+  return normalizeUserType(storedType);
 };
 
 const router = createRouter({
@@ -74,6 +83,7 @@ const router = createRouter({
       path: '/dashboard',
       component: DashBoardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['user'] },
+      redirect: { name: 'dashboard-overview' },
       children: [
         {
           path: '',
@@ -118,6 +128,7 @@ const router = createRouter({
       path: '/counselor-dashboard',
       component: CounselorDashboardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['counsellor'] },
+      redirect: { name: 'counselor-overview' },
       children: [
         {
           path: '',
@@ -171,6 +182,7 @@ const router = createRouter({
       path: '/dashboard',
       component: DashBoardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['user'] },
+      redirect: { name: 'dashboard-overview' },
       children: [
         {
           path: '',
@@ -215,6 +227,7 @@ const router = createRouter({
       path: '/counselor-dashboard',
       component: CounselorDashboardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['counsellor'] },
+      redirect: { name: 'counselor-overview' },
       children: [
         {
           path: '',
@@ -299,6 +312,7 @@ const router = createRouter({
       path: '/dashboard',
       component: DashBoardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['user'] },
+      redirect: { name: 'dashboard-overview' },
       children: [
         {
           path: '',
@@ -343,6 +357,7 @@ const router = createRouter({
       path: '/counselor-dashboard',
       component: CounselorDashboardLayout,
       meta: { requiresAuth: true, allowedUserTypes: ['counsellor'] },
+      redirect: { name: 'counselor-overview' },
       children: [
         {
           path: '',
